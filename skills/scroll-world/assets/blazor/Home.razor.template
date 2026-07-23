@@ -1,0 +1,45 @@
+@page "/"
+@layout {{SCROLL_WORLD_LAYOUT}}
+
+<{{SEO_COMPONENT}} Title="{{HOME_TITLE}}"
+                   Description="{{HOME_DESCRIPTION}}"
+                   CanonicalUrl="{{CANONICAL_ORIGIN}}/"
+                   SchemaJson="@{{SCHEMA_PROVIDER}}.ForHome()" />
+
+<main id="{{WORLD_CONTAINER_ID}}"
+      class="min-h-screen {{WORLD_CSS_CLASS}}"
+      aria-label="{{WORLD_ARIA_LABEL}}"
+      data-scroll-world="{{WORLD_KEY}}">
+    <div class="{{WORLD_CSS_CLASS}}__first-frame"
+         data-scroll-world-first-frame
+         aria-hidden="true">
+        <picture data-scroll-world-first-picture>
+            {{FIRST_STILL_MOBILE_SOURCE_ELEMENT}}
+            <source type="image/webp"
+                    srcset="{{FIRST_STILL_DESKTOP_SRCSET}}"
+                    sizes="100vw" />
+            <img src="/assets/scroll-world/stills/{{FIRST_STILL}}.webp"
+                 width="{{FIRST_STILL_WIDTH}}"
+                 height="{{FIRST_STILL_HEIGHT}}"
+                 alt=""
+                 loading="eager"
+                 decoding="async"
+                 fetchpriority="high"
+                 data-scroll-world-first-still />
+        </picture>
+    </div>
+
+    <section id="homepage-story"
+             class="sr-only"
+             data-scroll-world-copy>
+        <h1>{{HOME_H1}}</h1>
+        <h2>{{SECTION_1_TITLE}}</h2>
+        <p>{{SECTION_1_BODY}}</p>
+        <a href="{{SECTION_1_CTA_HREF}}"
+           tabindex="-1">{{SECTION_1_CTA_LABEL}}</a>
+        <!-- Repeat every real heading/summary. Hidden links must have an equivalent
+             visible keyboard-accessible nav/CTA before receiving tabindex="-1". -->
+        <a href="{{PRIMARY_CTA_HREF}}"
+           tabindex="-1">{{PRIMARY_CTA_LABEL}}</a>
+    </section>
+</main>

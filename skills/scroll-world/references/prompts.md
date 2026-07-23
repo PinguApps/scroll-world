@@ -3,7 +3,16 @@
 Everything here is fill-in-the-slots. Keep the **style preamble** byte-for-byte identical
 across all scene stills — that identical text is what makes the world feel like one place.
 
-## Intake checklist (Step 1)
+## Contents
+
+1. Intake and locked choices
+2. Shared style preamble
+3. Scene-image prompts and review
+4. Architecture A leg prompts
+5. Architecture B dive/connector prompts
+6. Homepage copy fields
+
+## Intake checklist (SKILL Phase 2)
 
 Collect and write down:
 
@@ -13,15 +22,25 @@ Collect and write down:
 - `TONE` — a word or two (cozy/premium, playful, industrial…).
 - `STYLE` — the art direction (default below).
 - `SECTIONS[]` — ordered list; for each: `id`, `label`, `subject` (what's in the diorama), `eyebrow`, `title`, `body` (≤ 1 sentence), `tags[]` (0–3). Last section = hero product + CTA.
-- `MOBILE` — yes/no. **Always asked** (SKILL Step 1.5), presented to the user
+- `MOBILE` — yes/no. **Always asked** (SKILL Phase 2), presented to the user
   with the ~2× credit cost stated.
-- `VIDEO_TIER` — draft (`seedance_2_0_mini`) | standard (`seedance_2_0`, default) |
-  alternate (`kling3_0`). Chosen by cost at SKILL Step 1.6, with the calibrated
-  total estimate stated before anything renders.
-- `STILLS_SOURCE` — higgsfield (`gpt_image_2`, spends credits) | codex
-  (`image_gen`, subscription-billed; only offer when the Codex CLI is present). Yes = the **native 9:16 portrait chain** (pipeline §6b):
+- `VIDEO_TIER` — draft Mini 480/720 | efficient Seedance Fast 480/720 |
+  production Seedance Standard 1080 (default) | premium Seedance Standard 4K |
+  Kling Standard/Pro/4K alternate. Inspect the live schema and show the calibrated
+  cost before anything renders.
+- `SOURCE_BITRATE` — standard (default) | high. High can improve a demanding master but
+  creates a larger source and may affect live pricing; calibrate rather than claiming a
+  fixed surcharge. The final web encode is still separately compressed.
+- `GENERATE_AUDIO` — no. The site is muted and native audio materially increases cost.
+- `STILLS_SOURCE` — Higgsfield `gpt_image_2` 1K/2K/4K (default 2K high) |
+  Higgsfield `nano_banana_2`/Nano Banana Pro 1K/2K/4K | Codex `image_gen`
+  (no Higgsfield credits; only offer when available). Use one source/model throughout.
+- `MOBILE=yes` means the **native 9:16 portrait chain** (pipeline §7):
   portrait renders of every dive/connector + `clipMobile`/`connectorsMobile`/`stillMobile`
   wiring + the full mobile QA. The §6 crop encodes are a no-credits stopgap only.
+- `REVISION_ALLOWANCE` — normally 25–50% beyond the accepted-clip base count for
+  production, increased for ambitious motion. This is budget headroom, never permission
+  to batch: every still and video candidate goes through `review-workflow.md` individually.
 
 ## Style preamble (default: clay diorama)
 
@@ -40,9 +59,9 @@ Alternate directions (swap the first two sentences, keep the palette/no-text tai
 - **Glossy toy:** "Isometric glossy vinyl-toy diorama, smooth plastic shading, soft rim light, collectible figurine look."
 - **Claymation:** "Isometric stop-motion clay set, visible thumbprints, handmade plasticine texture, soft studio softbox light."
 - **Neon night:** "Isometric miniature at night, warm interior glow and neon signage, moody rim light, wet reflective ground."
-- **Photoreal architectural** (real estate, hospitality, premium/luxury): "Ultra-photorealistic architectural photography of a single cohesive [subject], cinematic wide-angle, warm golden-hour light, natural materials, restrained designer furnishings, a breathtaking view, editorial magazine quality (Architectural Digest), shallow depth of field, no people." For photoreal, drop the floating-island framing and the knockout (Step 3) — the scenes are **full-bleed** (a dark page background reads premium), the "dive" glides *through doorways/glass* rather than opening a roof, and cohesion comes entirely from the identical preamble (do NOT pass an `--image` reference — it clones the same room). Interiors trip Seedance's NSFW filter often; see SKILL Gotchas.
+- **Photoreal architectural** (real estate, hospitality, premium/luxury): "Ultra-photorealistic architectural photography of a single cohesive [subject], cinematic wide-angle, warm golden-hour light, natural materials, restrained designer furnishings, a breathtaking view, editorial magazine quality (Architectural Digest), shallow depth of field, no people." For photoreal, drop the floating-island framing and the knockout — the scenes are **full-bleed** (a dark page background reads premium), the "dive" glides *through doorways/glass* rather than opening a roof, and cohesion comes entirely from the identical preamble (do NOT pass an `--image` reference — it clones the same room).
 
-## Scene still prompt (Step 2)
+## Scene still prompt (SKILL Phase 4)
 
 ```
 [STYLE PREAMBLE]
@@ -58,16 +77,29 @@ Tips:
 - **Compose for the centre.** The page renders every clip `object-fit:cover`. Keep the
   focal subject horizontally centred with a little headroom, and don't park anything
   essential at the far left/right edges. Mobile ships its own native 9:16 chain
-  (pipeline §6b), so this is not about surviving a crop — but a centred composition makes
+  (pipeline §7), so this is not about surviving a crop — but a centred composition makes
   the portrait renders open cleanly from the same still, and it keeps the dive's focal
   point where the camera actually flies.
-- Aspect `3:2`, `--resolution 2k --quality high`.
+- Use 3:2 for a floating-island concept that may be recomposed; use 16:9 for full-bleed
+  desktop art. Native full-bleed mobile uses a separately generated 9:16 composition.
+  Default quality remains `--resolution 2k --quality high`.
 
-## Leg prompt — architecture A, continuous forward take (Step 4)
+Generate one still candidate only, present the actual image with prompt/model/dimensions/
+quality/cost, and wait for explicit thumbs-up or thumbs-down. Preserve rejected revisions.
+Only approved stills may condition video. After every scene still is individually approved,
+present an approved-files-only contact sheet and wait for separate cohesion approval before
+generating video.
+
+## Leg prompt — architecture A, continuous forward take (SKILL Phase 4)
 
 `--start-image = previous leg's ACTUAL last frame` (leg 0: the first scene's still).
 **No `--end-image`.** The bolded clauses are the motion-handoff contract — keep them
 verbatim; the mid-leg move is where the expression goes.
+
+For Seedance legs after leg 0, also provide the current scene’s approved concept with
+`--image` as a non-boundary visual reference. The exact previous frame remains
+`--start-image`; never swap those roles. Kling 3.0 has no separate image-reference input,
+so its later architecture-A scenes rely on the prompt and have higher drift risk.
 
 ```
 Single continuous cinematic camera move, no cuts. **Continue the same slow, steady
@@ -95,9 +127,11 @@ reverse. That's why "ease back out" is fine mid-leg.
 
 After rendering each leg, **check its last frame** before generating the next: it should
 read as a frame from a calm forward glide (no motion blur sideways, no half-finished
-orbit). If it doesn't, re-roll this leg — a bad handoff frame poisons every leg after it.
+orbit). Present the full candidate for thumbs-up/down. If rejected, apply the user's
+feedback and revise this leg only; a bad or unapproved handoff frame must never feed the
+next leg.
 
-## Dive-in clip prompt (Step 4)
+## Dive-in clip prompt (SKILL Phase 4)
 
 `--start-image = the scene still` (solid-bg version).
 
@@ -114,12 +148,15 @@ subtle parallax. No text, no captions.
 For scenes with no building to open (a field, a plaza, a road), replace the roof clause
 with "the camera flies low across [the scene] toward [focal point]."
 
-Params by chain model (SKILL Step 4 table): seedance —
+Generate and review dives one at a time. Lock the approved dive set before any connector
+generation.
+
+Params by chain model (SKILL Phase 4): seedance —
 `--mode std --resolution 1080p --aspect_ratio 16:9 --duration 8`, no audio flag;
 kling3_0 — `--mode std --sound off --aspect_ratio 16:9 --duration 10` (no `--resolution`
 param). Same for architecture-A legs.
 
-## Connector clip prompt (Step 5)
+## Connector clip prompt (SKILL Phase 4)
 
 `--start-image = dive_i LAST frame` (extracted), `--end-image = dive_{i+1} FIRST frame`
 (extracted). Both from the RENDERED videos, not the stills.
@@ -138,7 +175,11 @@ of it."
 
 seedance: `--mode std --resolution 1080p --aspect_ratio 16:9 --duration 5`; kling3_0:
 `--mode std --sound off --aspect_ratio 16:9 --duration 5`. Connectors need `--end-image`
-→ use a roster model that accepts it (Step 4).
+→ use a roster model that accepts it (SKILL Phase 4).
+
+Generate and review connectors one at a time. Show both required seam frames beside the
+candidate boundary frames; technical frame matching does not replace human approval of
+the motion between them.
 
 ## Copy per section (for the engine config)
 
