@@ -4,7 +4,7 @@ https://github.com/user-attachments/assets/b08e641e-985b-4bd4-83ff-6750272d0c37
 
 An agent skill for building a production-minded immersive scroll-scrubbed **homepage** in a Blazor Web App.
 
-As a visitor scrolls, a pre-rendered camera moves through a connected generated world. The experience can use an isometric diorama, grounded architectural walkthrough, or another approved art direction. The skill handles business/brand discovery, approval-gated image and video generation, responsive encoding, the proven scroll engine, homepage SSR/SEO/AEO, Blazor InteractiveAuto lifecycle, tests, and performance QA.
+As a visitor scrolls, a pre-rendered camera moves through a connected generated world. The experience can use an isometric diorama, grounded architectural walkthrough, locked isometric glide, or another approved art direction. The skill handles business/brand discovery, approval-gated image and video generation, responsive encoding, the proven scroll engine, homepage SSR/SEO/AEO, Blazor InteractiveAuto lifecycle, tests, and performance QA.
 
 ## Install
 
@@ -54,6 +54,8 @@ does not take ownership of site-wide SEO/AEO, robots, sitemap, or supporting-pag
 ## Requirements
 
 - A Blazor Web App targeting a currently supported .NET version.
+- [Monid CLI](https://monid.ai) with an API key and sufficient balance—the default
+  pay-per-clip Seedance 2.0 video backend.
 - Authenticated [Higgsfield CLI](https://higgsfield.ai) with approved credits.
 - `ffmpeg` and `ffprobe`.
 - PowerShell 7 on Windows, or Bash 3.2+ with `jq` and `curl` on Unix-like systems.
@@ -67,11 +69,13 @@ The skill audits these requirements but does not install tools, authenticate, sw
 
 Every run explicitly chooses:
 
-- Draft Mini (480/720p), efficient Seedance Fast (480/720p), production Seedance Standard (1080p), premium Seedance Standard (4K), or Kling Standard/Pro/4K alternate.
+- Monid Seedance 2.0 pay-per-clip by default, or Higgsfield credits as the fallback biller.
+- Monid 480p previz or 720p/1080p delivery; Higgsfield also offers Mini, Fast,
+  Standard, premium 4K, and Kling alternatives where their live schemas qualify.
 - Desktop only or a separate native 9:16 mobile chain. Native mobile roughly doubles video
   generation and can require separate portrait stills; a crop is never silently labelled
   mobile-optimised.
-- Continuous forward architecture for grounded worlds or dive/connector architecture for miniature worlds.
+- Fly-through dives/connectors, a continuous forward walkthrough, or a locked isometric glide.
 - Higgsfield or available Codex image generation for all stills in the chain.
 
 The seam rule is strict: neighbouring clips share actual rendered boundary frames. Scroll scrubs the resulting video; it does not render 3D in the browser.
@@ -121,6 +125,12 @@ skills/scroll-world/
 ```
 
 Generated media is project-specific and is not stored in this repository.
+
+Monid support was qualified against `bytedance /v1/video/seedance-2.0` on 2026-07-25.
+The skill re-inspects the live schema before each build, passes the output ratio explicitly,
+uses signed workspace-file URLs for boundary frames, and verifies billed cost after every
+candidate. Higgsfield remains the fallback when Monid is unavailable, underfunded, or the
+approved model is Higgsfield-only.
 
 ## License
 

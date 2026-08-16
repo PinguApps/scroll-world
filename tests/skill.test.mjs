@@ -229,3 +229,19 @@ test("quality choices cover live production resolution paths", () => {
   assert.match(skillSource, /nano_banana_2/);
   assert.match(skillSource, /Never mix still models/);
 });
+
+test("upstream camera and Monid guidance survives the Blazor-first merge", async () => {
+  const pipeline = await read("references/pipeline.md");
+  const prompts = await read("references/prompts.md");
+
+  assert.match(skillSource, /Camera style, always ask/);
+  assert.match(prompts, /locked-iso/);
+  assert.match(skillSource, /Monid.*default pay-per-clip video backend/s);
+  assert.match(pipeline, /bytedance \/v1\/video\/seedance-2\.0/);
+  assert.match(pipeline, /role:"first_frame"/);
+  assert.match(pipeline, /role:"last_frame"/);
+  assert.match(pipeline, /ratio:\$ratio/);
+  assert.match(pipeline, /cost\.value/);
+  assert.match(pipeline, /2>&1 < \/dev\/null/);
+  assert.match(skillSource, /Judge composition and props, not\s+raw PSNR/);
+});
