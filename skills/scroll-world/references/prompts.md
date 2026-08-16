@@ -22,12 +22,16 @@ Collect and write down:
 - `TONE` — a word or two (cozy/premium, playful, industrial…).
 - `STYLE` — the art direction (default below).
 - `SECTIONS[]` — ordered list; for each: `id`, `label`, `subject` (what's in the diorama), `eyebrow`, `title`, `body` (≤ 1 sentence), `tags[]` (0–3). Last section = hero product + CTA.
+- `CAMERA` — fly-through (architecture B: dives plus aerial hops) | walkthrough
+  (architecture A: expressive, always-forward legs) | locked-iso (architecture A plus
+  the fixed-angle clause below). **Always ask** and explain the feel/trade-off of each.
 - `MOBILE` — yes/no. **Always asked** (SKILL Phase 2), presented to the user
   with the ~2× credit cost stated.
-- `VIDEO_TIER` — draft Mini 480/720 | efficient Seedance Fast 480/720 |
-  production Seedance Standard 1080 (default) | premium Seedance Standard 4K |
-  Kling Standard/Pro/4K alternate. Inspect the live schema and show the calibrated
-  cost before anything renders.
+- `VIDEO_BACKEND` — Monid Seedance 2.0 pay-per-clip (default) | Higgsfield credits.
+  Inspect the live schema/balance and show the calibrated cost before anything renders.
+- `VIDEO_TIER` — Monid 480p previz, 720p efficient, or 1080p production (default) |
+  Higgsfield Mini/Fast/Standard/4K | Higgsfield Kling alternate. Use only routes whose
+  live schema satisfies the chosen architecture's frame-locking requirements.
 - `SOURCE_BITRATE` — standard (default) | high. High can improve a demanding master but
   creates a larger source and may affect live pricing; calibrate rather than claiming a
   fixed surcharge. The final web encode is still separately compressed.
@@ -108,6 +112,16 @@ into [SCENE i] toward [FOCAL POINT]. **In the final second, settle back into a s
 steady forward glide toward [the doorway / opening / direction of the next scene].**
 [STYLE tail + PALETTE]. Smooth, graceful, slow motion, subtle parallax. No text, no captions.
 ```
+
+For `CAMERA = locked-iso`, omit the mid-leg move and include this clause in every leg:
+
+```
+The camera keeps exactly the same high isometric angle throughout—no rotation, no orbit,
+no tilt. It travels straight and level while the world slides beneath the same view.
+```
+
+Keep the normal opening/closing forward-drift handoff clauses. Reject a leg whose angle
+rotates materially before allowing its final frame to condition the next leg.
 
 ### Mid-leg move library (pick by concept; omit for a plain glide)
 

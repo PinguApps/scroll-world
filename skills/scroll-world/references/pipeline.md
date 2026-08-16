@@ -9,6 +9,7 @@
 5. Approved-only delivery encoding and posters
 6. Explicit crop fallback
 7. Native portrait chain
+8. Monid video backend
 
 The executable examples below are Bash 3.2-safe and use `jq` and `curl`. On Windows, do
 not paste them into PowerShell or bounce paths/cleanup between shells. Translate the same
@@ -38,7 +39,13 @@ STILL_RESOLUTION=2k              # 1k | 2k | 4k
 STILL_QUALITY=high               # GPT Image only: low | medium | high
 STILL_ASPECT=3:2                 # floating concept; use 16:9 for full-bleed desktop art
 
-# Chain video model — ONE for every chained clip (SKILL Phase 4 roster).
+# Chain video backend/model — ONE provider/model for every chained clip when possible.
+# Monid Seedance 2.0 pay-per-clip is the default; Higgsfield is the fallback biller and
+# supplies Higgsfield-only models. Inspect the selected backend's live schema first.
+VBACKEND=monid                   # monid | higgsfield
+VRES=1080p                      # Monid: 480p previz | 720p efficient | 1080p production
+
+# Higgsfield fallback model (SKILL Phase 4 roster).
 # Must accept --start-image AND --end-image (verify: higgsfield model get <model>):
 # seedance_2_0 | kling3_0 | seedance_2_0_mini (draft tier). Always inspect the live
 # schema first. Reference-only models cannot hold a seam.
@@ -81,6 +88,10 @@ keep the user updated; do not block silently on `--wait`. On Windows, put the on
 call in a `.ps1` and use `Start-Process -WindowStyle Hidden -PassThru`; never revive the
 old multi-candidate wrapper pattern.
 
+Sections 2–4 show the Higgsfield fallback functions. With the default Monid backend, use
+their one-candidate equivalents in §8; approval ordering and exact frame handoffs are the
+same.
+
 ## 1. Scene stills
 
 Write one prompt file per section to `$WORK/still_<name>.txt` (see prompts.md). Generate
@@ -116,7 +127,7 @@ gen_still_codex_candidate() { # name revision
   name="$1"; rev="$2"; base="$WORK/desktop-still-$name-$rev"
   codex exec -C "$WORK" -s workspace-write --skip-git-repo-check \
     'Use the image generation tool ($imagegen) to generate: '"$(cat "$WORK/still_$name.txt")"' Use the approved aspect ratio and high resolution. Save it as ./'"$(basename "$base")"'.png. Do not do anything else.' \
-    > "$base.codex.log" 2>&1
+    > "$base.codex.log" 2>&1 < /dev/null
   [ -f "$base.png" ] || { echo "still $name $rev FAIL (see .codex.log)"; return 1; }
   echo "STOP: present $base.png with prompt/settings; wait for thumbs-up/down."
 }
@@ -124,6 +135,10 @@ gen_still_codex_candidate() { # name revision
 # Example: generate exactly one still candidate, then stop.
 gen_still_codex_candidate farm r01
 ```
+
+Keep `< /dev/null` on every detached/backgrounded nested `codex exec`. Without it,
+multiple invocations can contend for the parent script's stdin and hang while waiting for
+additional input.
 
 After every still has individual 👍 approval, create and show a contact sheet containing
 only those approved files. Wait for a separate cohesion approval before any video
@@ -366,6 +381,118 @@ mobile-media interview.
    standard 720-wide `stillMobile`, a 480-wide first-picture source, and a portrait LQIP.
    Wire `sections[k].stillMobile`; add the first portrait sources to the SSR `<picture>`
    so the browser selects them before JavaScript. This prevents a landscape→portrait flash.
+
+## 8. Monid video backend — default
+
+`bytedance /v1/video/seedance-2.0` was qualified on 2026-07-25 for first- and last-frame
+conditioning. It is the default pay-per-clip route for either architecture. Re-run
+`monid inspect` before every build: if the schema no longer matches, stop and use the
+qualification protocol below before spending on the chain.
+
+Monid rejects inline images. Upload each local boundary frame to its free workspace file
+system and use the signed HTTPS URL. `/cat` takes the same relative path supplied to `/put`,
+not the `home/...` path echoed by the upload response.
+
+```bash
+monid_frame_url() { # local-png unique-remote-name
+  local_png="$1"; remote="$2"; jpg="$WORK/sfs-$remote.jpg"
+  ffmpeg -v error -y -i "$local_png" -vf "scale='min(1536,iw)':-2" -q:v 2 "$jpg"
+  size=$(wc -c < "$jpg" | tr -d ' ')
+  upload=$(NO_COLOR=1 monid run -p sfs -e /put \
+    -i "{\"path\":\"chain/$remote.jpg\",\"sizeBytes\":$size,\"ttl\":\"1h\"}" \
+    -w 60 -j | jq -r '.output.uploadUrl // empty')
+  [ -n "$upload" ] || return 1
+  curl -fsS -T "$jpg" "$upload" > /dev/null || return 1
+  NO_COLOR=1 monid run -p sfs -e /cat \
+    -i "{\"path\":\"chain/$remote.jpg\",\"ttl\":\"1d\"}" -w 60 -j \
+    | jq -r '.output.url // empty'
+}
+
+monid_wait() { # run-id result-json
+  while :; do
+    NO_COLOR=1 monid runs get -r "$1" -j > "$2" 2>/dev/null
+    status=$(jq -r '.status // empty' "$2")
+    case "$status" in
+      COMPLETED) return 0 ;;
+      FAILED|BLOCKED|STOPPED|TIME_OUT) return 1 ;;
+    esac
+    sleep 8
+  done
+}
+
+gen_monid_candidate() { # kind name start end-or-empty revision ratio duration [desktop|portrait]
+  kind="$1"; name="$2"; start="$3"; end="$4"; rev="$5"; ratio="$6"; duration="$7"
+  orientation="${8:-desktop}"
+  base="$WORK/$orientation-$kind-$name-$rev"
+  prompt="$WORK/${kind}_$name.txt"
+  start_url=$(monid_frame_url "$start" "$orientation-$kind-$name-$rev-start") || return 1
+
+  if [ -n "$end" ]; then
+    end_url=$(monid_frame_url "$end" "$orientation-$kind-$name-$rev-end") || return 1
+    jq -n --arg p "$(cat "$prompt")" --arg s "$start_url" --arg e "$end_url" \
+      --arg r "$VRES" --arg ratio "$ratio" --argjson duration "$duration" \
+      '{content:[{type:"text",text:$p},
+                 {type:"image_url",image_url:{url:$s},role:"first_frame"},
+                 {type:"image_url",image_url:{url:$e},role:"last_frame"}],
+        resolution:$r,duration:$duration,ratio:$ratio,generate_audio:false}' \
+      > "$base.body.json"
+  else
+    jq -n --arg p "$(cat "$prompt")" --arg s "$start_url" \
+      --arg r "$VRES" --arg ratio "$ratio" --argjson duration "$duration" \
+      '{content:[{type:"text",text:$p},
+                 {type:"image_url",image_url:{url:$s},role:"first_frame"}],
+        resolution:$r,duration:$duration,ratio:$ratio,generate_audio:false}' \
+      > "$base.body.json"
+  fi
+
+  run_id=$(NO_COLOR=1 monid run -p bytedance -e /v1/video/seedance-2.0 \
+    -f "$base.body.json" -j | jq -r '.runId // empty')
+  [ -n "$run_id" ] || return 1
+  monid_wait "$run_id" "$base.json" || {
+    echo "$kind $name $rev $(jq -r '.status // "FAILED"' "$base.json")"
+    return 1
+  }
+  url=$(jq -r '.output.content.video_url // empty' "$base.json")
+  [ -n "$url" ] && curl -fsSL "$url" -o "$base.mp4" || return 1
+  echo "$kind $name $rev cost=$(jq -r '.cost.value // "unknown"' "$base.json")"
+  echo "STOP: present $base.mp4 with prompt/settings/cost; wait for thumbs-up/down."
+}
+
+gen_leg_monid_candidate() { # name exact-start-image revision
+  gen_monid_candidate leg "$1" "$2" "" "$3" 16:9 "$DIVE_DUR" || return 1
+  ffmpeg -v error -y -sseof -1 -i "$WORK/desktop-leg-$1-$3.mp4" \
+    -vf reverse -frames:v 1 -q:v 2 "$WORK/desktop-leg-$1-$3-last.png"
+}
+
+gen_dive_monid_candidate() { # name approved-start-image revision
+  gen_monid_candidate dive "$1" "$2" "" "$3" 16:9 "$DIVE_DUR"
+}
+
+gen_conn_monid_candidate() { # index exact-start-image exact-end-image revision
+  gen_monid_candidate conn "$1" "$2" "$3" "$4" 16:9 "$CONN_DUR"
+}
+
+# Generate exactly one currently authorized candidate, then stop.
+# gen_leg_monid_candidate farm "$WORK/desktop-still-farm-r02.png" r01
+# gen_dive_monid_candidate farm "$WORK/desktop-still-farm-r02.png" r01
+# gen_conn_monid_candidate 01 "$WORK/approved-last-farm.png" \
+#   "$WORK/approved-first-kitchen.png" r01
+```
+
+For a native portrait candidate, call the generic function with `9:16` and `portrait` as
+its ratio and orientation arguments, for example:
+`gen_monid_candidate dive farm "$PORTRAIT_START" "" r01 9:16 "$DIVE_DUR" portrait`.
+Wrappers may expose that call more readably. Never mix portrait and desktop frame inputs.
+Result URLs expire, so the function downloads immediately. Read `cost.value` after every
+candidate and check `monid balance` between approved phases. `BLOCKED` is terminal (usually
+a workspace run/budget cap); surface it rather than retrying or changing account state.
+
+Qualification for a new or changed endpoint is two cheap 480p candidates: first, prompt plus
+a real first frame must preserve the opening composition and obey the requested motion;
+second, add a visibly different last frame and confirm the result lands on that composition.
+Compare frames visually and optionally use PSNR as supporting evidence. Composition and prop
+continuity—not a raw PSNR threshold—decide whether the seam qualifies. A route that supports
+only the first frame may serve architecture A, never architecture B connectors.
 
 ## Notes
 

@@ -1,6 +1,6 @@
 ---
 name: scroll-world
-description: Build a production-quality immersive Higgsfield-generated, scroll-scrubbed homepage in a Blazor Web App. Use for scroll cinematics, 3D or diorama worlds, fly-through landing pages, or turning a business journey into an interactive homepage. Covers discovery, brand identity, approval-gated still/video generation, responsive encoding, a proven smooth scroll engine, homepage SSR/SEO/AEO, Blazor InteractiveAuto lifecycle, accessibility, regression tests, and Lighthouse/browser QA. Supporting pages are outside scope except minimal placeholders needed for navigation.
+description: Build a production-quality immersive AI-generated, scroll-scrubbed homepage in a Blazor Web App. Use for scroll cinematics, 3D or diorama worlds, fly-through landing pages, or turning a business journey into an interactive homepage. Covers discovery, brand identity, approval-gated still/video generation through Monid or Higgsfield, responsive encoding, a proven smooth scroll engine, homepage SSR/SEO/AEO, Blazor InteractiveAuto lifecycle, accessibility, regression tests, and Lighthouse/browser QA. Supporting pages are outside scope except minimal placeholders needed for navigation.
 ---
 
 # Scroll World for Blazor
@@ -55,12 +55,17 @@ Confirm the app is a server-hosted Blazor Web App capable of InteractiveAuto. If
 
 Audit prerequisites without mutating the machine or account:
 
-- `higgsfield` installed and authenticated; inspect workspace/credits.
+- `monid` installed with an active key; inspect its live Seedance schema and balance. Monid
+  Seedance 2.0 is the default pay-per-clip video backend. If it is unavailable or cannot
+  cover the approved chain, report that and offer Higgsfield as the fallback biller.
+- `higgsfield` installed and authenticated; inspect workspace/credits. It supplies stills,
+  Higgsfield-only models such as Kling, and the fallback video chain.
 - `ffmpeg` and `ffprobe` on PATH.
 - A native script route for the media pipeline: PowerShell 7 on Windows, or Bash 3.2+
   with `jq` and `curl` on Unix-like systems. Do not assume one shell from another.
 - Python 3 + Pillow only if knockout or LQIP tooling needs it.
-- Optional Codex image generation route if available.
+- Optional direct Codex image generation route if available. If only an authenticated nested
+  Codex CLI is available, every detached invocation must have stdin closed so it cannot hang.
 - A supported .NET SDK, the repository’s JS package runner when applicable, and an
   existing Chrome/Edge or browser-automation route for real interaction QA.
 - An existing Lighthouse installation/runner for performance auditing.
@@ -74,22 +79,33 @@ Ask only decisions that change the result. Group questions into short rounds.
 1. Subject, audience, location/service area, offers, proof, objections, CTA, contact details, and one-sentence commercial goal.
 2. Brand source: import from an existing site, supplied kit, or propose a full identity for approval. Capture name, voice, typography direction, and 4–6 named colours.
 3. Art direction and ordered journey. Propose 5–7 scenes derived from the customer journey or value chain. Every scene needs subject, eyebrow, headline, body, up to three tags, service link if relevant, and intended focal moment.
-4. Camera architecture:
-   - A: continuous forward chain for grounded walkthroughs. Recommended unless the world is intentionally miniature/map-like.
-   - B: dives plus aerial connectors for diorama worlds.
+4. Camera style, always ask by feel and record as `CAMERA`:
+   - **Fly through the world**: expressive dives and aerial hops; architecture B. Recommend
+     for miniature/map-like diorama worlds. Direction reverses at seams by design.
+   - **One continuous walkthrough**: expressive but always-forward legs; architecture A.
+     Recommend for grounded or photoreal worlds.
+   - **Locked isometric glide**: one fixed angle with the world moving beneath it;
+     architecture A plus the locked-isometric prompt clause. Calmest and cheapest to re-roll.
+   Explain the trade-off in one line each. Phase 4 implements this choice; it does not silently
+   re-decide it.
 5. Mobile media, always ask: desktop only or a second native 9:16 chain. Explain that
    native portrait approximately doubles video spend and may add `N` portrait image
    generations when separate compositions are required. Never silently call a centre
    crop “mobile-optimised.”
-6. Quality, always inspect the live model schemas and ask:
+6. Backend and quality, always inspect the live schemas and ask. Use Monid's
+   `bytedance /v1/video/seedance-2.0` pay-per-clip route by default; use Higgsfield when
+   the user prefers its credits, the Monid balance is insufficient, or the approved model
+   is Higgsfield-only. Monid uses the same Seedance family but a different serving stack;
+   if switching provider mid-chain becomes necessary, review the first rescued seam before
+   continuing.
 
    | Tier | Video route | Purpose |
    |---|---|---|
-   | Draft/previz | `seedance_2_0_mini`, 480p or 720p | Lowest-cost motion/composition validation |
-   | Efficient | `seedance_2_0`, Fast, 480p or 720p | Faster/lower-cost final delivery when HD is sufficient |
-   | Production | `seedance_2_0`, Standard, 1080p | Default web-production master |
-   | Premium master | `seedance_2_0`, Standard, 4K | Archive/crop headroom; expensive and rarely worth serving directly |
-   | Alternate | `kling3_0`, Standard/Pro/4K mode | Different motion/look or filter fallback; verify native output with `ffprobe` |
+   | Draft/previz | Higgsfield `seedance_2_0_mini`, 480p or 720p; or Monid Seedance 2.0 at 480p | Lowest-cost motion/composition validation |
+   | Efficient | Higgsfield `seedance_2_0`, Fast, 480p or 720p; or Monid Seedance 2.0 at 720p | Lower-cost HD delivery |
+   | Production | Higgsfield `seedance_2_0`, Standard, 1080p; or Monid Seedance 2.0 at 1080p | Default web-production master |
+   | Premium master | Higgsfield `seedance_2_0`, Standard, 4K | Archive/crop headroom; expensive and rarely worth serving directly |
+   | Alternate | Higgsfield `kling3_0`, Standard/Pro/4K mode | Different motion/look or filter fallback; verify native output with `ffprobe` |
 
    Also choose one still source for the whole chain:
    - Higgsfield `gpt_image_2`: 1K/2K/4K and low/medium/high; default 2K high.
@@ -114,6 +130,7 @@ accepted sequential legs` for A. Native mobile doubles video work and adds `N` i
 generations when it needs separately generated portrait compositions; a reviewed
 floating-island canvas derivative adds no generation. Show accepted-media base cost
 separately from a realistic 25–50% revision allowance (more for ambitious motion).
+Use the live Monid price/schema and balance rather than relying on historical figures.
 
 Use staged spend approval because live prices vary:
 
@@ -153,6 +170,25 @@ requested; preserve and report existing site behaviour instead.
 
 Read `references/prompts.md`, `references/pipeline.md`, and `references/media-gotchas.md` completely before generating.
 
+The default video backend is Monid `bytedance /v1/video/seedance-2.0`, qualified for
+first- and last-frame conditioning on 2026-07-25. Re-inspect it before every build because
+the catalog can change. Its contract differs from Higgsfield:
+
+- Upload boundary frames through Monid's free workspace file system and pass the resulting
+  signed HTTPS URLs; inline/base64 image data is rejected.
+- Pass `ratio` explicitly (`16:9` desktop or `9:16` native mobile); the adaptive default can
+  follow an input still's aspect instead.
+- Read and report `cost.value` after every candidate, and download results immediately
+  because their URLs expire.
+- If the input schema changed, qualify cheaply before committing: first-frame + prompt must
+  preserve the opening composition and obey motion; connector qualification must also land
+  on a distinct last-frame composition. Use PSNR only as a supporting signal—visual
+  composition is authoritative. A start-only route qualifies for architecture A, not B.
+
+Higgsfield remains the fallback biller and the route for Higgsfield-only models. Use one
+model/provider for the chain where possible; any unavoidable switch requires explicit seam
+review before further spend.
+
 Use one byte-identical style preamble, palette, lens/lighting language, and still source
 throughout. Generate and approve every stochastic image through
 `references/review-workflow.md`, exactly one candidate at a time. After every scene still is
@@ -178,11 +214,13 @@ portrait variants require their own review. Desktop approval does not approve mo
 The seam rule is absolute:
 
 - Architecture A: each next leg starts from the previous leg’s actual final rendered
-  frame. End and begin with the same gentle forward drift. No connectors. For Seedance
-  legs after the first, also pass that scene’s approved still as a non-boundary image
-  reference so the new environment remains visually controlled. Never substitute it for
-  the previous leg’s exact start frame. Kling lacks this separate image-reference input
-  and therefore relies more heavily on the prompt.
+  frame. End and begin with the same gentle forward drift. No connectors. For Higgsfield
+  Seedance legs after the first, also pass that scene’s approved still as a non-boundary
+  image reference so the new environment remains visually controlled. On Monid, add such
+  a reference only if the inspected schema explicitly supports it; otherwise use the exact
+  first frame plus the scene prompt. Never substitute a concept still for the previous
+  leg’s exact start frame. Kling lacks this separate image-reference input and therefore
+  relies more heavily on the prompt.
 - Architecture B: connector start = previous dive’s actual final frame; connector end = next dive’s actual first frame. Never use the original concept still as a connector endpoint.
 
 Use one frame-locking video model across the chain. Supported roster: `seedance_2_0`, `seedance_2_0_mini`, `kling3_0`. Verify the current model schema before the first candidate. A requested alternative is valid only if its start/end conditioning satisfies the chosen architecture.
@@ -238,7 +276,8 @@ Verify in a real browser, not only unit tests:
 - Fresh direct homepage after an extended idle makes zero Blazor framework/server/WASM requests.
 - Direct interactive page hydrates; InteractiveAuto works; then enhanced navigation home keeps the existing runtime and mounts the cinematic.
 - Only nearby clips remain loaded; leaving home aborts/revokes everything.
-- Seams in both directions, desktop and opted-in mobile.
+- Seams in both directions, desktop and opted-in mobile. Judge composition and props, not
+  raw PSNR: codec/detail shimmer can produce a modest score on a visually correct seam.
 
 Build and run all relevant tests. Run Lighthouse against the homepage in a production build
 with consistent desktop and mobile profiles for performance, accessibility, best practices,
@@ -255,7 +294,7 @@ Deliver:
 - The finished Blazor homepage integration and generated assets.
 - A short list of approved choices and tuned per-section pacing/focus values.
 - Build/test/Lighthouse/network results.
-- Credit use and rerolls.
+- Media spend, provider, and rerolls.
 - Any deployment assumptions. For a CDN such as Bunny, recommend versioned immutable URLs, Brotli for text assets, correct MIME/CORS, long cache lifetimes, and byte-range support; Blob loading still provides robust local seekability.
 - A clear note if mobile is desktop fallback/crop rather than native portrait.
 - A clear boundary note that substantive supporting pages and site-wide SEO/AEO remain
@@ -266,7 +305,7 @@ Do not claim completion until the solution builds, relevant automated tests pass
 ## Reference routing
 
 - `references/prompts.md` — intake and image/video prompt patterns.
-- `references/pipeline.md` — Higgsfield, frame extraction, encoding, native mobile chain.
+- `references/pipeline.md` — Monid/Higgsfield generation, frame extraction, encoding, native mobile chain.
 - `references/scrub-engine.js` — canonical engine; copy rather than reimplement.
 - `references/blazor-integration.md` — exact SSR/InteractiveAuto and enhanced-navigation wiring.
 - `references/homepage-foundation.md` — homepage SSR/SEO/AEO, accessibility, LQIP, and CDN.
