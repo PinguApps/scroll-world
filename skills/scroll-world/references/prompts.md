@@ -27,24 +27,21 @@ Collect and write down:
   the fixed-angle clause below). **Always ask** and explain the feel/trade-off of each.
 - `MOBILE` — yes/no. **Always asked** (SKILL Phase 2), presented to the user
   with the ~2× credit cost stated.
-- `VIDEO_BACKEND` — Monid Seedance 2.0 pay-per-clip (default) | Higgsfield credits.
-  Inspect the live schema/balance and show the calibrated cost before anything renders.
-- `VIDEO_TIER` — Monid 480p previz, 720p efficient, or 1080p production (default) |
-  Higgsfield Mini/Fast/Standard/4K | Higgsfield Kling alternate. Use only routes whose
-  live schema satisfies the chosen architecture's frame-locking requirements.
-- `SOURCE_BITRATE` — standard (default) | high. High can improve a demanding master but
-  creates a larger source and may affect live pricing; calibrate rather than claiming a
-  fixed surcharge. The final web encode is still separately compressed.
+- `VIDEO_MODEL` — current top Wan model; presently Wan 3.0. Confirm the CLI default before
+  generation and never silently choose an older model.
+- `VIDEO_TIER` — Wan 3.0 `720P` draft/previz or `1080P` production. Draft and production
+  use the same top model; only resolution changes.
 - `GENERATE_AUDIO` — no. The site is muted and native audio materially increases cost.
-- `STILLS_SOURCE` — Higgsfield `gpt_image_2` 1K/2K/4K (default 2K high) |
-  Higgsfield `nano_banana_2`/Nano Banana Pro 1K/2K/4K | Codex `image_gen`
-  (no Higgsfield credits; only offer when available). Use one source/model throughout.
-- `MOBILE=yes` means the **native 9:16 portrait chain** (pipeline §7):
+- `STILLS_SOURCE` — direct ChatGPT/Codex image generation. Never use a Wan image command.
+  Use one approved image model/style path throughout; if the direct tool is unavailable,
+  ask the user for supplied images or approval for another non-Wan source.
+- `MOBILE=yes` means the **native 9:16 portrait chain** (pipeline §8):
   portrait renders of every dive/connector + `clipMobile`/`connectorsMobile`/`stillMobile`
-  wiring + the full mobile QA. The §6 crop encodes are a no-credits stopgap only.
+  wiring + the full mobile QA. The approved crop fallback in pipeline §8 is a no-credits
+  stopgap only.
 - `REVISION_ALLOWANCE` — normally 25–50% beyond the accepted-clip base count for
   production, increased for ambitious motion. This is budget headroom, never permission
-  to batch: every still and video candidate goes through `review-workflow.md` individually.
+  to auto-reroll: every still and video candidate goes through `review-workflow.md`.
 
 ## Style preamble (default: clay diorama)
 
@@ -81,12 +78,12 @@ Tips:
 - **Compose for the centre.** The page renders every clip `object-fit:cover`. Keep the
   focal subject horizontally centred with a little headroom, and don't park anything
   essential at the far left/right edges. Mobile ships its own native 9:16 chain
-  (pipeline §7), so this is not about surviving a crop — but a centred composition makes
+  (pipeline §8), so this is not about surviving a crop — but a centred composition makes
   the portrait renders open cleanly from the same still, and it keeps the dive's focal
   point where the camera actually flies.
 - Use 3:2 for a floating-island concept that may be recomposed; use 16:9 for full-bleed
   desktop art. Native full-bleed mobile uses a separately generated 9:16 composition.
-  Default quality remains `--resolution 2k --quality high`.
+  Request the direct image tool's high-quality output; retain the exact original pixels.
 
 Generate one still candidate only, present the actual image with prompt/model/dimensions/
 quality/cost, and wait for explicit thumbs-up or thumbs-down. Preserve rejected revisions.
@@ -96,14 +93,13 @@ generating video.
 
 ## Leg prompt — architecture A, continuous forward take (SKILL Phase 4)
 
-`--start-image = previous leg's ACTUAL last frame` (leg 0: the first scene's still).
-**No `--end-image`.** The bolded clauses are the motion-handoff contract — keep them
+`--first-frame = previous leg's ACTUAL last frame` (leg 0: the first scene's still).
+**No `--last-frame`.** The bolded clauses are the motion-handoff contract — keep them
 verbatim; the mid-leg move is where the expression goes.
 
-For Seedance legs after leg 0, also provide the current scene’s approved concept with
-`--image` as a non-boundary visual reference. The exact previous frame remains
-`--start-image`; never swap those roles. Kling 3.0 has no separate image-reference input,
-so its later architecture-A scenes rely on the prompt and have higher drift risk.
+Wan 3.0 `frame2video` receives the exact previous frame through `--first-frame`. Keep the
+approved scene concept, shared style preamble, palette, props, and destination explicit in
+the prompt; never replace the previous rendered boundary with a concept still.
 
 ```
 Single continuous cinematic camera move, no cuts. **Continue the same slow, steady
@@ -147,7 +143,7 @@ next leg.
 
 ## Dive-in clip prompt (SKILL Phase 4)
 
-`--start-image = the scene still` (solid-bg version).
+`--first-frame = the scene still` (solid-bg version).
 
 ```
 Single continuous cinematic camera move, no cuts. Begin high and far, looking down at the
@@ -162,17 +158,17 @@ subtle parallax. No text, no captions.
 For scenes with no building to open (a field, a plaza, a road), replace the roof clause
 with "the camera flies low across [the scene] toward [focal point]."
 
-Generate and review dives one at a time. Lock the approved dive set before any connector
-generation.
+Generate dives only within the independently approved Wan batch/concurrency rules; review
+each candidate separately. Lock the approved dive set before any connector generation.
 
-Params by chain model (SKILL Phase 4): seedance —
-`--mode std --resolution 1080p --aspect_ratio 16:9 --duration 8`, no audio flag;
-kling3_0 — `--mode std --sound off --aspect_ratio 16:9 --duration 10` (no `--resolution`
-param). Same for architecture-A legs.
+WAN command shape: `wan frame2video --first-frame <approved-frame> --prompt <prompt>
+--resolution <720P|1080P> --duration 8 --audio-output=false --output json`. Use `720P`
+for draft validation and `1080P` for production. Do not pass a fixed `--ratio` with Wan 3.0
+frame-to-video; its adaptive ratio follows the approved 16:9 or 9:16 input frame.
 
 ## Connector clip prompt (SKILL Phase 4)
 
-`--start-image = dive_i LAST frame` (extracted), `--end-image = dive_{i+1} FIRST frame`
+`--first-frame = dive_i LAST frame` (extracted), `--last-frame = dive_{i+1} FIRST frame`
 (extracted). Both from the RENDERED videos, not the stills.
 
 ```
@@ -187,13 +183,13 @@ For the last connector into a hero-product finale: "…glides forward and the wo
 dissolves toward a single giant [PRODUCT] floating in soft [BG] space, arriving in front
 of it."
 
-seedance: `--mode std --resolution 1080p --aspect_ratio 16:9 --duration 5`; kling3_0:
-`--mode std --sound off --aspect_ratio 16:9 --duration 5`. Connectors need `--end-image`
-→ use a roster model that accepts it (SKILL Phase 4).
+WAN command shape: `wan frame2video --first-frame <approved-start> --last-frame
+<approved-end> --prompt <prompt> --resolution <720P|1080P> --duration 5
+--audio-output=false --output json`. Both endpoints must share the intended aspect ratio.
 
-Generate and review connectors one at a time. Show both required seam frames beside the
-candidate boundary frames; technical frame matching does not replace human approval of
-the motion between them.
+Generate connectors only within the independently approved Wan batch/concurrency rules.
+Review each separately and show both required seam frames beside its candidate boundary
+frames; technical frame matching does not replace human approval of the motion between them.
 
 ## Copy per section (for the engine config)
 

@@ -54,14 +54,13 @@ does not take ownership of site-wide SEO/AEO, robots, sitemap, or supporting-pag
 ## Requirements
 
 - A Blazor Web App targeting a currently supported .NET version.
-- [Monid CLI](https://monid.ai) with an API key and sufficient balance—the default
-  pay-per-clip Seedance 2.0 video backend.
-- Authenticated [Higgsfield CLI](https://higgsfield.ai) with approved credits.
+- Current authenticated [`wan` CLI](https://www.npmjs.com/package/@wan-ai/cli) with an
+  eligible Wan membership and sufficient credits.
 - `ffmpeg` and `ffprobe`.
-- PowerShell 7 on Windows, or Bash 3.2+ with `jq` and `curl` on Unix-like systems.
+- PowerShell 7 on Windows, or Bash 3.2+ with `jq` on Unix-like systems.
 - Python 3 + Pillow when background knockout or local LQIP tooling requires it.
-- Optional direct Codex image generation for stills; an already-installed/authenticated
-  nested CLI is only a fallback.
+- Direct ChatGPT/Codex image generation for stills. Wan image commands are intentionally
+  excluded from this skill.
 
 The skill audits these requirements but does not install tools, authenticate, switch workspaces, or spend credits without approval.
 
@@ -69,22 +68,22 @@ The skill audits these requirements but does not install tools, authenticate, sw
 
 Every run explicitly chooses:
 
-- Monid Seedance 2.0 pay-per-clip by default, or Higgsfield credits as the fallback biller.
-- Monid 480p previz or 720p/1080p delivery; Higgsfield also offers Mini, Fast,
-  Standard, premium 4K, and Kling alternatives where their live schemas qualify.
+- The current top Wan video model (Wan 3.0 today) for the complete chain.
+- 720p for tests/previz and 1080p for production renders, always with generated audio off.
 - Desktop only or a separate native 9:16 mobile chain. Native mobile roughly doubles video
   generation and can require separate portrait stills; a crop is never silently labelled
   mobile-optimised.
 - Fly-through dives/connectors, a continuous forward walkthrough, or a locked isometric glide.
-- Higgsfield or available Codex image generation for all stills in the chain.
+- Direct ChatGPT/Codex image generation for all stills in the chain, never Wan.
 
 The seam rule is strict: neighbouring clips share actual rendered boundary frames. Scroll scrubs the resulting video; it does not render 3D in the browser.
 
-Every stochastic image and video is reviewed one at a time—scene concepts, portrait
-variants, social/brand images, dives, legs, and connectors. The skill shows the candidate
-with its prompt/settings/cost and waits for a thumbs-up or thumbs-down with feedback.
-Rejected revisions are preserved and logged. Only approved stills may condition video,
-and only an explicitly approved clip can unlock the next dependent generation.
+Every stochastic image and video receives its own review—scene concepts, portrait variants,
+social/brand images, dives, legs, and connectors. The skill shows the candidate with its
+prompt/settings/task details and waits for a thumbs-up or thumbs-down with feedback.
+Rejected revisions are preserved and logged. Only approved stills may condition video, and
+only an explicitly approved clip can unlock dependent generation. Up to three independent
+Wan videos may run concurrently when the live quota and approved spend allow it.
 
 ## Proven interaction defaults
 
@@ -126,11 +125,9 @@ skills/scroll-world/
 
 Generated media is project-specific and is not stored in this repository.
 
-Monid support was qualified against `bytedance /v1/video/seedance-2.0` on 2026-07-25.
-The skill re-inspects the live schema before each build, passes the output ratio explicitly,
-uses signed workspace-file URLs for boundary frames, and verifies billed cost after every
-candidate. Higgsfield remains the fallback when Monid is unavailable, underfunded, or the
-approved model is Higgsfield-only.
+The skill re-checks the installed WAN CLI before each build, uses Wan 3.0 first/last-frame
+conditioning, passes local frames directly for CLI-managed upload, respects the account's
+live video concurrency, and records task IDs and credit changes. Images remain outside Wan.
 
 ## License
 

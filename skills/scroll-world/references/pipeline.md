@@ -1,515 +1,364 @@
-# Pipeline: one-candidate media workflow
+# Pipeline: approved images + Wan 3.0 video
 
 ## Contents
 
-1. Scene concepts and approval
-2. Architecture A legs or architecture B dives
-3. Exact boundary-frame extraction
-4. Architecture B connectors
-5. Approved-only delivery encoding and posters
-6. Explicit crop fallback
-7. Native portrait chain
-8. Monid video backend
+1. Preflight and fixed settings
+2. Candidate naming and approval ledger
+3. Images outside Wan
+4. Wan submission and result handling
+5. Architecture A legs
+6. Architecture B dives and connectors
+7. Approved-only encoding and posters
+8. Mobile delivery
+9. Failure handling
 
-The executable examples below are Bash 3.2-safe and use `jq` and `curl`. On Windows, do
-not paste them into PowerShell or bounce paths/cleanup between shells. Translate the same
-single-candidate functions into PowerShell 7 using:
+Use native PowerShell on Windows and native Bash on Unix-like systems. Do not pass paths
+between shells. Every `wan` call made by an agent must use `--output json`. Never install,
+update, authenticate, buy credits, or switch accounts without explicit user approval.
 
-- `& higgsfield ...` for the CLI call.
-- `ConvertFrom-Json` for job output.
-- `Invoke-WebRequest -OutFile` for the approved result URL.
-- Native `ffmpeg`/`ffprobe` invocations for deterministic media work.
-- A one-candidate `.ps1` launched with
-  `Start-Process -WindowStyle Hidden -PassThru -RedirectStandardOutput ...`
-  `-RedirectStandardError ...` when detached execution is needed.
+## 1. Preflight and fixed settings
 
-Preserve revisioned filenames, exact manifest inputs, the approval stops, and every encoder
-parameter. First audit which native route exists; report a missing shell/helper rather than
-installing it or silently switching environments.
+Before the first Wan command in a session:
 
-Set these once. `NAMES` is the ordered section ids; the last is the hero/finale.
-
-```bash
-WORK=/tmp/scroll-world           # scratch dir for prompts, sources, frames
-ASSETS=./wwwroot/assets/scroll-world # adapt to the Blazor static-web-assets project
-mkdir -p "$WORK" "$ASSETS/stills" "$ASSETS/video"
-NAMES="farm kitchen shop delivery plaza finale"   # <-- your section ids, in order
-STILL_MODEL=gpt_image_2          # or nano_banana_2; use one model for the whole chain
-STILL_RESOLUTION=2k              # 1k | 2k | 4k
-STILL_QUALITY=high               # GPT Image only: low | medium | high
-STILL_ASPECT=3:2                 # floating concept; use 16:9 for full-bleed desktop art
-
-# Chain video backend/model — ONE provider/model for every chained clip when possible.
-# Monid Seedance 2.0 pay-per-clip is the default; Higgsfield is the fallback biller and
-# supplies Higgsfield-only models. Inspect the selected backend's live schema first.
-VBACKEND=monid                   # monid | higgsfield
-VRES=1080p                      # Monid: 480p previz | 720p efficient | 1080p production
-
-# Higgsfield fallback model (SKILL Phase 4 roster).
-# Must accept --start-image AND --end-image (verify: higgsfield model get <model>):
-# seedance_2_0 | kling3_0 | seedance_2_0_mini (draft tier). Always inspect the live
-# schema first. Reference-only models cannot hold a seam.
-VMODEL=seedance_2_0
-# Approved quality settings. Examples:
-#   Seedance production: std + 1080p (default)
-#   Seedance premium master: std + 4k
-#   Seedance efficient: fast + 720p
-#   Mini draft: 720p (no mode parameter)
-#   Kling: std/pro/4k mode; ffprobe the actual output and never assume/upscale it.
-SEEDANCE_MODE=std
-SEEDANCE_RESOLUTION=1080p
-SOURCE_BITRATE=standard
-KLING_MODE=std
-
-case "$VMODEL" in
-  kling3_0)
-    VOPTS="--mode $KLING_MODE --sound off"
-    DIVE_DUR=10; CONN_DUR=5
-    ;;
-  seedance_2_0_mini)
-    VOPTS="--resolution 720p --bitrate_mode $SOURCE_BITRATE --generate_audio false"
-    DIVE_DUR=8; CONN_DUR=5
-    ;;
-  *)
-    VOPTS="--mode $SEEDANCE_MODE --resolution $SEEDANCE_RESOLUTION --bitrate_mode $SOURCE_BITRATE --generate_audio false"
-    DIVE_DUR=8; CONN_DUR=5
-    ;;
-esac
+```powershell
+wan --version
+wan update --check --output json
+wan --help
+wan auth status --output json
+wan auth list --output json
+wan credits --output json
+wan task list --page-size 10 --media-type video --output json
+ffmpeg -version
+ffprobe -version
 ```
 
-Higgsfield generations take minutes. Run only the **single currently authorized candidate**
-in a background/detached process and poll it. Never launch an image or video generation
-loop. Read `review-workflow.md`: after each candidate finishes, show it and stop for
-feedback.
+If an update is available, ask before running it; if the user declines, stop video generation
+because the current top model cannot be guaranteed. Stop if authentication or membership is
+invalid. Read `taskQuota.video` as the number of video submissions available now; it is not
+a daily generation allowance or credit balance. Summarize only authentication state, active
+site/account label, quotas, and credits; do not repeat profile/address data from auth output.
 
-The examples below show the candidate functions directly for readability. In agent work,
-launch exactly one function in a detached/background process, record its PID, poll it, and
-keep the user updated; do not block silently on `--wait`. On Windows, put the one candidate
-call in a `.ps1` and use `Start-Process -WindowStyle Hidden -PassThru`; never revive the
-old multi-candidate wrapper pattern.
+Lock these settings for the build:
 
-Sections 2–4 show the Higgsfield fallback functions. With the default Monid backend, use
-their one-candidate equivalents in §8; approval ordering and exact frame handoffs are the
-same.
-
-## 1. Scene stills
-
-Write one prompt file per section to `$WORK/still_<name>.txt` (see prompts.md). Generate
-one candidate, show it, and stop:
-
-```bash
-gen_still_candidate() { # name revision
-  name="$1"; rev="$2"; base="$WORK/desktop-still-$name-$rev"
-  if [ "$STILL_MODEL" = "gpt_image_2" ]; then
-    image_opts="--resolution $STILL_RESOLUTION --quality $STILL_QUALITY"
-  else
-    image_opts="--resolution $STILL_RESOLUTION"
-  fi
-  higgsfield generate create "$STILL_MODEL" --prompt "$(cat "$WORK/still_$name.txt")" \
-    --aspect_ratio "$STILL_ASPECT" $image_opts --wait --wait-timeout 15m --json \
-    > "$base.json" 2> "$base.err"
-  url=$(jq -r '.[0].result_url // empty' "$base.json")
-  [ -n "$url" ] && curl -fsSL "$url" -o "$base.png" || return 1
-  echo "STOP: present $base.png with prompt/settings/cost; wait for thumbs-up/down."
-}
-
-# Example: generate exactly one still candidate, then stop.
-gen_still_candidate farm r01
+```text
+VIDEO_MODEL = current top Wan model (Wan 3.0 / modelVersion=3_0 at authoring time)
+DRAFT_RESOLUTION = 720P
+PRODUCTION_RESOLUTION = 1080P
+VIDEO_AUDIO = false
+DESKTOP_INPUT_ASPECT = 16:9
+PORTRAIT_INPUT_ASPECT = 9:16
+MAX_VIDEO_CONCURRENCY = min(3, live taskQuota.video)
 ```
 
-When the agent has a direct image-generation tool, use it directly with the same prompt,
-aspect and review gate. Save the returned file with the revisioned candidate name. Use the
-nested Codex CLI variant below only when no direct tool exists and that CLI is already
-installed/authenticated (subscription-billed, zero Higgsfield credits):
+Do not select an older model for drafts. Re-run the version/update check for a later build
+instead of treating `wan3.0` as permanently top. With current Wan 3.0 frame-to-video, omit
+`--ratio` (or use only `adaptive`): output follows the first frame. Therefore create exact
+16:9 or 9:16 boundary frames before submission and do not mix aspects within a chain.
 
-```bash
-gen_still_codex_candidate() { # name revision
-  name="$1"; rev="$2"; base="$WORK/desktop-still-$name-$rev"
-  codex exec -C "$WORK" -s workspace-write --skip-git-repo-check \
-    'Use the image generation tool ($imagegen) to generate: '"$(cat "$WORK/still_$name.txt")"' Use the approved aspect ratio and high resolution. Save it as ./'"$(basename "$base")"'.png. Do not do anything else.' \
-    > "$base.codex.log" 2>&1 < /dev/null
-  [ -f "$base.png" ] || { echo "still $name $rev FAIL (see .codex.log)"; return 1; }
-  echo "STOP: present $base.png with prompt/settings; wait for thumbs-up/down."
-}
+Use explicit fixed durations for scroll pacing. Eight seconds is a good section-leg/dive
+starting point; five seconds is a good connector starting point. Do not use Smart Duration
+for a frame-locked chain because section timing must remain predictable.
 
-# Example: generate exactly one still candidate, then stop.
-gen_still_codex_candidate farm r01
+## 2. Candidate naming and approval ledger
+
+Create project-local `review/` and scratch/output directories. Keep every revision:
+
+```text
+desktop-still-farm-r01.png
+desktop-leg-farm-r01.mp4
+desktop-dive-farm-r01.mp4
+desktop-connector-01-r01.mp4
+portrait-dive-farm-r01.mp4
 ```
 
-Keep `< /dev/null` on every detached/backgrounded nested `codex exec`. Without it,
-multiple invocations can contend for the parent script's stdin and hang while waiting for
-additional input.
+Maintain `review/approval-ledger.md`. Record slot, orientation, revision, prompt path,
+input SHA-256 hashes, model/modelVersion, resolution, duration, audio setting, Wan task ID,
+pre/post credits, saved raw path, dimensions, review status, feedback, and approved path.
+Never overwrite a candidate and never use globs to discover an approved input.
 
-After every still has individual 👍 approval, create and show a contact sheet containing
-only those approved files. Wait for a separate cohesion approval before any video
-generation. Build an exact approved-concept manifest—never use a wildcard:
+Before paid video generation:
 
-```bash
-APPROVED_STILLS="$WORK/approved-stills.txt"
-# One ledger-derived row per scene, in journey order:
-# farm|/tmp/scroll-world/desktop-still-farm-r02.png
+1. Show the accepted-media count plus revision allowance.
+2. Show live Wan credits and available video concurrency.
+3. Get explicit spend approval.
+4. Generate one representative 720p clip, review it, then recalibrate the remaining plan.
+
+## 3. Images outside Wan
+
+Use the direct ChatGPT/Codex image-generation tool for every stochastic image. Do not call
+`wan text2image`, `wan image2image`, or `wan sequential_image` in this skill.
+
+For each image slot:
+
+1. Build the prompt from `prompts.md`, keeping the shared style preamble byte-identical.
+2. Generate one high-quality candidate and preserve it with a revisioned name.
+3. Present the actual image, prompt, image tool/model when exposed, dimensions, and revision.
+4. Ask for `👍 Approve` or `👎 Reject` plus feedback.
+5. On rejection, revise only what the feedback warrants and generate one new revision.
+6. Use the pixels in later prompts or Wan inputs only after explicit approval.
+
+After every scene still is individually approved, show an approved-files-only contact sheet
+and obtain a separate cohesion approval. If direct image generation is unavailable, stop
+and ask the user to supply images or approve another non-Wan image source.
+
+Concept images are conditioning inputs, not public posters. Public posters come from exact
+frame 0 of approved videos.
+
+## 4. Wan submission and result handling
+
+### Command contracts
+
+Single first frame:
+
+```powershell
+wan frame2video `
+  --first-frame <approved-frame-path> `
+  --prompt <prompt-text> `
+  --resolution 720P `
+  --duration 8 `
+  --audio-output=false `
+  --output json
 ```
 
-These are concept/conditioning inputs, not public posters. Public posters come from exact
-frame 0 of approved videos in §5, matching the proven homepage and avoiding 3:2→16:9
-flashes. Optionally run `knockout.py` on an exact approved floating-island concept only
-when a portrait canvas/composite needs transparency. If cohesion review reopens a still,
-preserve the former approval, create one revision, and repeat both approvals.
+First and last frame:
 
-## 2A. Continuous forward legs — architecture A
-
-Each next leg starts from the previous leg's **approved actual final rendered frame**.
-Generate one revision only, present it, and wait for explicit approval.
-
-Prompt files live at `$WORK/leg_<name>.txt`.
-
-```bash
-gen_leg_candidate() { # name exact-start-image scene-reference-or-empty revision
-  name="$1"; start="$2"; reference="$3"; rev="$4"
-  base="$WORK/desktop-leg-$name-$rev"
-  if [ -n "$reference" ] && [ "$reference" != "$start" ] && [ "$VMODEL" != "kling3_0" ]; then
-    higgsfield generate create "$VMODEL" --prompt "$(cat "$WORK/leg_$name.txt")" \
-      --start-image "$start" --image "$reference" \
-      $VOPTS --aspect_ratio 16:9 --duration "$DIVE_DUR" \
-      --wait --wait-timeout 20m --json > "$base.json" 2> "$base.err"
-  else
-    higgsfield generate create "$VMODEL" --prompt "$(cat "$WORK/leg_$name.txt")" \
-      --start-image "$start" $VOPTS --aspect_ratio 16:9 --duration "$DIVE_DUR" \
-      --wait --wait-timeout 20m --json > "$base.json" 2> "$base.err"
-  fi
-  url=$(jq -r '.[0].result_url // empty' "$base.json")
-  [ -n "$url" ] || { echo "leg $name $rev FAIL"; return 1; }
-  curl -fsSL "$url" -o "$base.mp4" || return 1
-  ffmpeg -v error -y -sseof -1 -i "$base.mp4" -vf reverse -frames:v 1 -q:v 2 "$base-last.png"
-  echo "STOP: present $base.mp4 and review frames; do not generate another video."
-}
-
-# Example: generate exactly one candidate, then stop.
-gen_leg_candidate farm "$WORK/desktop-still-farm-r02.png" "" r01
-# Later leg: exact previous boundary remains start; approved scene concept is reference only.
-# gen_leg_candidate kitchen "$WORK/desktop-leg-farm-r01-last.png" \
-#   "$WORK/desktop-still-kitchen-r02.png" r01
+```powershell
+wan frame2video `
+  --first-frame <approved-start-path> `
+  --last-frame <approved-end-path> `
+  --prompt <prompt-text> `
+  --resolution 720P `
+  --duration 5 `
+  --audio-output=false `
+  --output json
 ```
 
-After 👍 approval, record the exact candidate in the ledger. Its `*-last.png` may then
-become the next candidate's start image. After 👎 feedback, preserve it and render only
-one incremented revision. Architecture A uses approved legs as section clips and
-`connectors: []`. Skip §§2B–4.
+Use `1080P` for every production render. `720P` is only for tests/previz. Do not pass
+`--generation-mode`, `--think-mode`, `--thinking-mode`, uploaded audio, or a legacy
+`--model` override. Local PNG/JPEG/WebP inputs are validated and uploaded automatically.
 
-## 2B. Dive-in clips — architecture B
+Run `--dry-run` first when changing command shape or media inputs. Confirm the JSON request
+contains `modelVersion: "3_0"`, `audio: false`, the intended resolution, `baseImage`, and
+`tailImage` when supplied. A dry run does not prove visual quality and is not approval.
 
-Prompt files at `$WORK/dive_<name>.txt`. Start image = the solid-bg still PNG.
+### Safe PowerShell candidate submission
 
-```bash
-gen_dive() { # name approved-start-image revision ($VOPTS is intentionally word-split)
-  name="$1"; start="$2"; rev="$3"; base="$WORK/desktop-dive-$name-$rev"
-  higgsfield generate create "$VMODEL" --prompt "$(cat "$WORK/dive_$name.txt")" \
-    --start-image "$start" \
-    $VOPTS --aspect_ratio 16:9 --duration "$DIVE_DUR" \
-    --wait --wait-timeout 20m --json > "$base.json" 2> "$base.err"
-  url=$(jq -r '.[0].result_url // empty' "$base.json")
-  [ -n "$url" ] && curl -fsSL "$url" -o "$base.mp4" || return 1
-  echo "STOP: present $base.mp4; wait for thumbs-up/down before any next video."
-}
+Use a candidate-specific directory and prompt file. The example submits one authorized job:
 
-# Example: generate exactly one candidate, then stop.
-gen_dive farm "$WORK/desktop-still-farm-r02.png" r01
+```powershell
+$candidate = 'desktop-connector-01-r01'
+$candidateDir = Join-Path $work $candidate
+New-Item -ItemType Directory -Force -Path $candidateDir | Out-Null
+
+$auth = wan auth status --output json | ConvertFrom-Json
+if (-not $auth.ok -or -not $auth.authenticated) { throw 'Wan authentication required.' }
+if ([int]$auth.data.taskQuota.video -lt 1) { throw 'No Wan video submission slot is currently available.' }
+
+$before = wan credits --output json | ConvertFrom-Json
+$prompt = Get-Content -Raw -LiteralPath (Join-Path $work 'conn_01.txt')
+$submission = wan frame2video `
+  --first-frame $approvedStart `
+  --last-frame $approvedEnd `
+  --prompt $prompt `
+  --resolution $resolution `
+  --duration 5 `
+  --audio-output=false `
+  --output json | ConvertFrom-Json
+
+$taskId = $submission.taskId
+if (-not $taskId) { throw 'Wan did not return a task ID.' }
+$submission | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $candidateDir 'submission.json')
 ```
 
-Approve/revise each dive until locked, then move to the next. Lock the complete approved
-dive set before extracting connector frames.
+Do not block silently for minutes. Poll with short `wan result get <taskId> --output json`
+calls and keep the user updated. After success, save the watermark-free result:
 
-## 3. Extract boundary frames — architecture B seam handoff
+```powershell
+$result = wan result get $taskId --save --save-dir $candidateDir --output json | ConvertFrom-Json
+if ($result.statusLabel -ne 'succeeded' -or $result.savedFiles.Count -lt 1) {
+  throw "Wan task $taskId did not produce a saved video."
+}
 
-For each adjacent pair, the connector's start = dive_i's LAST frame, end = dive_{i+1}'s
-FIRST frame — extracted from the **rendered videos**, never the stills.
-
-```bash
-# Use the exact approved path from the ledger, never a wildcard/rejected revision.
-approved="$WORK/desktop-dive-farm-r02.mp4"
-ffmpeg -v error -y -ss 0 -i "$approved" -frames:v 1 -q:v 2 "$WORK/approved-first-farm.png"
-ffmpeg -v error -y -sseof -1 -i "$approved" -vf reverse -frames:v 1 -q:v 2 "$WORK/approved-last-farm.png"
+$raw = $result.savedFiles[0].path
+$candidatePath = Join-Path $work "$candidate.mp4"
+if (Test-Path -LiteralPath $candidatePath) { throw "Candidate path already exists: $candidatePath" }
+Copy-Item -LiteralPath $raw -Destination $candidatePath
+$after = wan credits --output json | ConvertFrom-Json
+$measuredDeduction = [int]$before.availableCount - [int]$after.availableCount
+ffprobe -v error -show_entries stream=width,height,r_frame_rate -show_entries format=duration `
+  -of json $candidatePath
 ```
 
-## 4. Connector clips — architecture B
+`--save` selects the watermark-free `downloadUrl` by default. Use `--with-watermark` only
+when the user explicitly asks. Record the result's `savedFiles[].watermark` value.
 
-Prompt files at `$WORK/conn_<i>.txt` (i = 1..N-1). Iterate adjacent pairs:
+Also inspect stream types. Wan may retain an effectively silent AAC track even when the
+request records `audio: false`; measure it rather than assuming. Reject any audible generated
+sound, and always use `-an` in delivery encoding so the homepage asset has no audio stream.
 
-```bash
-gen_conn() { # i startPng endPng revision
-  i="$1"; start="$2"; end="$3"; rev="$4"; base="$WORK/desktop-connector-$i-$rev"
-  higgsfield generate create "$VMODEL" --prompt "$(cat "$WORK/conn_$i.txt")" \
-    --start-image "$2" --end-image "$3" \
-    $VOPTS --aspect_ratio 16:9 --duration "$CONN_DUR" \
-    --wait --wait-timeout 20m --json > "$base.json" 2> "$base.err"
-  url=$(jq -r '.[0].result_url // empty' "$base.json")
-  [ -n "$url" ] && curl -fsSL "$url" -o "$base.mp4" || return 1
-  echo "STOP: present $base.mp4 with both seam comparisons; wait for approval."
-}
+### Concurrency
 
-# Example: generate exactly one connector candidate, then stop.
-gen_conn 01 "$WORK/approved-last-farm.png" "$WORK/approved-first-kitchen.png" r01
+Immediately before every submission, refresh auth status. Never have more than three
+skill-created video tasks in flight, and never exceed the lower available
+`taskQuota.video`. The live quota already accounts for in-flight tasks.
+
+Parallel submission is allowed only when all are true:
+
+- the user explicitly approved that named batch's spend;
+- the jobs are independent (for example, approved architecture-B dives);
+- each slot has one candidate, not multiple speculative revisions;
+- every result will be presented and approved separately;
+- no result is used in another prompt/input until that exact candidate is approved.
+
+Architecture-A legs are always sequential. Architecture-B connectors can be parallel only
+after all endpoint-providing dives are approved. If uncertain, submit one candidate.
+
+## 5. Architecture A: continuous forward legs
+
+Leg 1 starts from the approved first-scene still. Every later leg starts from the exact
+final rendered frame of its approved predecessor. Generate and review one leg before the
+next because the dependency is strict.
+
+```powershell
+wan frame2video `
+  --first-frame $exactApprovedStart `
+  --prompt (Get-Content -Raw -LiteralPath $legPrompt) `
+  --resolution $resolution `
+  --duration 8 `
+  --audio-output=false `
+  --output json
 ```
 
-## 5. Encode approved media and derive exact-frame posters
+After download, extract the final frame from the exact candidate:
 
-Retain raw masters. Standard Seedance 1080p and Kling’s measured native output are encoded
-without upscaling. A 4K master is normally downscaled to 1920 wide for web delivery while
-the raw 4K file is archived. Use CRF 20, GOP 8, light sharpen, no audio, and faststart.
-
-```bash
-enc() {
-  width=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$1")
-  vf="unsharp=5:5:0.8:5:5:0.0"
-  [ "$width" -gt 1920 ] && vf="scale=1920:-2,unsharp=5:5:0.8:5:5:0.0"
-  ffmpeg -v error -y -i "$1" -an -vf "$vf" \
-  -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p \
-  -g 8 -keyint_min 8 -sc_threshold 0 -movflags +faststart "$2"
-  echo "enc $2 $(du -h "$2"|cut -f1)"
-}
-
-# Section manifest, in journey order, from exact 👍 ledger rows:
-# slot|approved-video-source|delivery-video-destination
-APPROVED_SECTIONS="$WORK/approved-desktop-sections.txt"
-
-while IFS='|' read slot source destination; do
-  [ -n "$source" ] || continue
-  enc "$source" "$destination"
-
-  # Poster = exact frame 0 of the approved clip, never the 3:2 concept still.
-  poster="$WORK/approved-poster-$slot.png"
-  ffmpeg -v error -y -ss 0 -i "$source" -frames:v 1 -q:v 2 "$poster"
-  source_width=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$poster")
-  full_width=$source_width
-  [ "$full_width" -gt 1280 ] && full_width=1280
-  ffmpeg -v error -y -i "$poster" -vf "scale=$full_width:-2" -c:v libwebp -quality 84 "$ASSETS/stills/$slot.webp"
-  [ "$full_width" -ge 960 ] && ffmpeg -v error -y -i "$poster" -vf "scale=960:-2" -c:v libwebp -quality 82 "$ASSETS/stills/$slot-960.webp"
-  [ "$full_width" -ge 640 ] && ffmpeg -v error -y -i "$poster" -vf "scale=640:-2" -c:v libwebp -quality 80 "$ASSETS/stills/$slot-640.webp"
-done < "$APPROVED_SECTIONS"
-
-# Connectors need delivery encodes but no posters:
-# approved-source|delivery-destination
-APPROVED_CONNECTORS="$WORK/approved-desktop-connectors.txt"
-while IFS='|' read source destination; do
-  [ -n "$source" ] && enc "$source" "$destination"
-done < "$APPROVED_CONNECTORS"
-
-# First-scene CSS blur-up placeholder, derived from its approved frame-0 poster.
-IFS='|' read first first_source first_destination < "$APPROVED_SECTIONS"
-ffmpeg -v error -y -ss 0 -i "$first_source" -frames:v 1 \
-  -vf "scale=32:-2,gblur=sigma=2" -c:v libwebp -quality 28 \
-  "$ASSETS/stills/$first-lqip.webp"
+```powershell
+ffmpeg -v error -y -sseof -1 -i $candidateVideo -vf reverse -frames:v 1 -q:v 2 $candidateLastFrame
 ```
 
-Visually compare every public WebP with its approved frame 0 to catch an incorrect source,
-aspect change, distortion, or crop.
-Use actual generated widths/dimensions in the homepage `<picture>`; omit nonexistent 960/640
-candidates rather than upscaling. Now `sections[k].clip` points at the approved delivery
-video and `sections[k].still` at its matching frame-0 WebP. Architecture A uses
-`connectors: []`; architecture B supplies N−1 connector URLs in order.
+Present the full video plus first/25%/50%/75%/final review frames. Only after approval may
+`$candidateLastFrame` become the next leg's `--first-frame`. If an approved upstream leg is
+replaced, invalidate and recost every downstream leg.
 
-## 6. Centre-crop mobile encodes — FALLBACK ONLY, not the mobile version
+Architecture A uses approved legs as section clips and has no connectors.
 
-**The mobile version is the native 9:16 portrait chain (§7).** This section's crop
-encodes exist for one case: the user opted into mobile but credits can't cover the
-portrait chain — and shipping them must be called out and approved, never silent
-(portrait phones will see the landscape film's centre ~26%). The encode mechanics
-matter either way: scrubbing sets `currentTime` every frame, and a phone decoder's
-**seek cost scales with how many frames it must decode from the nearest keyframe** — so
-a 1080p `-g 8` master that scrubs fine on a laptop stutters on a phone. A **smaller
-frame + tighter GOP** fixes that (and halves the bytes on cellular). The crop `-m.mp4`
-sibling per clip:
+## 6. Architecture B: dives and connectors
 
-```bash
-# 720p, GOP 4 (twice the keyframes = ~half the seek-decode work), crf 23, same sharpen/faststart.
-encm() { ffmpeg -v error -y -i "$1" -an -vf "scale=-2:720,unsharp=5:5:0.6:5:5:0.0" \
-  -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p \
-  -g 4 -keyint_min 4 -sc_threshold 0 -movflags +faststart "$2"; echo "encm $2 $(du -h "$2"|cut -f1)"; }
+### Dives
 
-# Deterministic encoding may iterate, but always reads exact approved-ledger manifests.
-while IFS='|' read slot source destination; do
-  [ -n "$source" ] && encm "$source" "${destination%.mp4}-m.mp4"
-done < "$APPROVED_SECTIONS"
+Each dive starts from its exact approved scene still:
 
-while IFS='|' read source destination; do
-  [ -n "$source" ] && encm "$source" "${destination%.mp4}-m.mp4"
-done < "$APPROVED_CONNECTORS"
+```powershell
+wan frame2video `
+  --first-frame $approvedSceneStill `
+  --prompt (Get-Content -Raw -LiteralPath $divePrompt) `
+  --resolution $resolution `
+  --duration 8 `
+  --audio-output=false `
+  --output json
 ```
 
-Wire the variants in the engine config — the engine serves them automatically on phones,
-falling back to the desktop `clip` when a mobile one is absent:
+Dives are independent and may use up to the safe live concurrency after the representative
+clip and explicit batch approval. Present each candidate separately. Lock the complete dive
+set before connector work.
 
-```js
-sections[k].clipMobile = '/assets/scroll-world/video/<name>-m.mp4';
-connectorsMobile = ['/assets/scroll-world/video/connector-01-m.mp4', …];
+### Exact boundary frames
+
+For adjacent dives, connector start is dive i's final rendered frame and connector end is
+dive i+1's first rendered frame. Use only exact approved ledger paths:
+
+```powershell
+ffmpeg -v error -y -ss 0 -i $approvedDive -frames:v 1 -q:v 2 $approvedFirst
+ffmpeg -v error -y -sseof -1 -i $approvedDive -vf reverse -frames:v 1 -q:v 2 $approvedLast
 ```
 
-If phone scrubbing still stutters, tighten the GOP further (`-g 2`, or `-g 1` for all-intra
-= instant seeks at the cost of larger files); if cellular weight is the bigger worry, raise
-`crf` (24–26) or drop to `scale=-2:600`. If the master is already 720p (e.g. kling3_0 std),
-the mobile encode still pays off — the tighter GOP is what makes phone seeks cheap. All-mobile encodes stay 16:9 — the engine
-centre-crops them; this is an explicitly approved fallback, never the native mobile version.
+Never use concept stills as connector endpoints.
 
-## 7. Native 9:16 portrait chain — THE mobile version (SKILL Phase 2 opt-in)
+### Connectors
 
-When the user opts into mobile, this is what they get: a **separate 9:16 chain** rendered
-natively for phones and shipped as the mobile variants — never the §6 crops (those are the
-no-credits stopgap). Same seam laws as the main chain — the portrait chain frame-locks
-against its own rendered frames, never the landscape ones. Budget ~2N-1 video gens +
-re-rolls (interiors trip the NSFW filter in portrait too); state the credit cost at the
-mobile-media interview.
-
-1. **Portrait start art.** For a floating island, either generate/approve a native 9:16
-   still or composite the approved knocked-out island onto a 1080×1920 canvas in the page
-   background (about 94% width; visual centre around 45% height) and review the derivative.
-   For full-bleed/photoreal work, generate and approve a separate 9:16 still one candidate
-   at a time; never crop the landscape concept and call it native composition.
-2. **Dives/legs**: after desktop is fully locked, generate each portrait candidate
-   individually and use the same thumbs-up/down gate. Use the same prompt templates with
-   a portrait clause up front ("Vertical
-   portrait composition, the diorama centered with generous [bg] space above and below"),
-   `--aspect_ratio 9:16`, same model/params as the main chain. Review each last frame
-   before chaining, as ever.
-3. **Connectors**: lock all portrait dives first. Extract first/last frames **from the
-   approved 9:16 renders**, then generate and approve each 9:16 connector one at a time.
-   A native 9:16 scene mixed into cropped-16:9 neighbours pops at both seams — the portrait
-   chain must be complete, not partial.
-4. **Encode** with the §6 settings but portrait-oriented scale: `scale=720:-2` (720 wide),
-   `-g 4`, crf 23 → these ARE the `-m.mp4` mobile files (and they replace any §6 crop
-   stopgaps that shipped earlier).
-5. **Posters**: extract exact frame 0 from each approved 9:16 section clip. Generate the
-   standard 720-wide `stillMobile`, a 480-wide first-picture source, and a portrait LQIP.
-   Wire `sections[k].stillMobile`; add the first portrait sources to the SSR `<picture>`
-   so the browser selects them before JavaScript. This prevents a landscape→portrait flash.
-
-## 8. Monid video backend — default
-
-`bytedance /v1/video/seedance-2.0` was qualified on 2026-07-25 for first- and last-frame
-conditioning. It is the default pay-per-clip route for either architecture. Re-run
-`monid inspect` before every build: if the schema no longer matches, stop and use the
-qualification protocol below before spending on the chain.
-
-Monid rejects inline images. Upload each local boundary frame to its free workspace file
-system and use the signed HTTPS URL. `/cat` takes the same relative path supplied to `/put`,
-not the `home/...` path echoed by the upload response.
-
-```bash
-monid_frame_url() { # local-png unique-remote-name
-  local_png="$1"; remote="$2"; jpg="$WORK/sfs-$remote.jpg"
-  ffmpeg -v error -y -i "$local_png" -vf "scale='min(1536,iw)':-2" -q:v 2 "$jpg"
-  size=$(wc -c < "$jpg" | tr -d ' ')
-  upload=$(NO_COLOR=1 monid run -p sfs -e /put \
-    -i "{\"path\":\"chain/$remote.jpg\",\"sizeBytes\":$size,\"ttl\":\"1h\"}" \
-    -w 60 -j | jq -r '.output.uploadUrl // empty')
-  [ -n "$upload" ] || return 1
-  curl -fsS -T "$jpg" "$upload" > /dev/null || return 1
-  NO_COLOR=1 monid run -p sfs -e /cat \
-    -i "{\"path\":\"chain/$remote.jpg\",\"ttl\":\"1d\"}" -w 60 -j \
-    | jq -r '.output.url // empty'
-}
-
-monid_wait() { # run-id result-json
-  while :; do
-    NO_COLOR=1 monid runs get -r "$1" -j > "$2" 2>/dev/null
-    status=$(jq -r '.status // empty' "$2")
-    case "$status" in
-      COMPLETED) return 0 ;;
-      FAILED|BLOCKED|STOPPED|TIME_OUT) return 1 ;;
-    esac
-    sleep 8
-  done
-}
-
-gen_monid_candidate() { # kind name start end-or-empty revision ratio duration [desktop|portrait]
-  kind="$1"; name="$2"; start="$3"; end="$4"; rev="$5"; ratio="$6"; duration="$7"
-  orientation="${8:-desktop}"
-  base="$WORK/$orientation-$kind-$name-$rev"
-  prompt="$WORK/${kind}_$name.txt"
-  start_url=$(monid_frame_url "$start" "$orientation-$kind-$name-$rev-start") || return 1
-
-  if [ -n "$end" ]; then
-    end_url=$(monid_frame_url "$end" "$orientation-$kind-$name-$rev-end") || return 1
-    jq -n --arg p "$(cat "$prompt")" --arg s "$start_url" --arg e "$end_url" \
-      --arg r "$VRES" --arg ratio "$ratio" --argjson duration "$duration" \
-      '{content:[{type:"text",text:$p},
-                 {type:"image_url",image_url:{url:$s},role:"first_frame"},
-                 {type:"image_url",image_url:{url:$e},role:"last_frame"}],
-        resolution:$r,duration:$duration,ratio:$ratio,generate_audio:false}' \
-      > "$base.body.json"
-  else
-    jq -n --arg p "$(cat "$prompt")" --arg s "$start_url" \
-      --arg r "$VRES" --arg ratio "$ratio" --argjson duration "$duration" \
-      '{content:[{type:"text",text:$p},
-                 {type:"image_url",image_url:{url:$s},role:"first_frame"}],
-        resolution:$r,duration:$duration,ratio:$ratio,generate_audio:false}' \
-      > "$base.body.json"
-  fi
-
-  run_id=$(NO_COLOR=1 monid run -p bytedance -e /v1/video/seedance-2.0 \
-    -f "$base.body.json" -j | jq -r '.runId // empty')
-  [ -n "$run_id" ] || return 1
-  monid_wait "$run_id" "$base.json" || {
-    echo "$kind $name $rev $(jq -r '.status // "FAILED"' "$base.json")"
-    return 1
-  }
-  url=$(jq -r '.output.content.video_url // empty' "$base.json")
-  [ -n "$url" ] && curl -fsSL "$url" -o "$base.mp4" || return 1
-  echo "$kind $name $rev cost=$(jq -r '.cost.value // "unknown"' "$base.json")"
-  echo "STOP: present $base.mp4 with prompt/settings/cost; wait for thumbs-up/down."
-}
-
-gen_leg_monid_candidate() { # name exact-start-image revision
-  gen_monid_candidate leg "$1" "$2" "" "$3" 16:9 "$DIVE_DUR" || return 1
-  ffmpeg -v error -y -sseof -1 -i "$WORK/desktop-leg-$1-$3.mp4" \
-    -vf reverse -frames:v 1 -q:v 2 "$WORK/desktop-leg-$1-$3-last.png"
-}
-
-gen_dive_monid_candidate() { # name approved-start-image revision
-  gen_monid_candidate dive "$1" "$2" "" "$3" 16:9 "$DIVE_DUR"
-}
-
-gen_conn_monid_candidate() { # index exact-start-image exact-end-image revision
-  gen_monid_candidate conn "$1" "$2" "$3" "$4" 16:9 "$CONN_DUR"
-}
-
-# Generate exactly one currently authorized candidate, then stop.
-# gen_leg_monid_candidate farm "$WORK/desktop-still-farm-r02.png" r01
-# gen_dive_monid_candidate farm "$WORK/desktop-still-farm-r02.png" r01
-# gen_conn_monid_candidate 01 "$WORK/approved-last-farm.png" \
-#   "$WORK/approved-first-kitchen.png" r01
+```powershell
+wan frame2video `
+  --first-frame $approvedPreviousLast `
+  --last-frame $approvedNextFirst `
+  --prompt (Get-Content -Raw -LiteralPath $connectorPrompt) `
+  --resolution $resolution `
+  --duration 5 `
+  --audio-output=false `
+  --output json
 ```
 
-For a native portrait candidate, call the generic function with `9:16` and `portrait` as
-its ratio and orientation arguments, for example:
-`gen_monid_candidate dive farm "$PORTRAIT_START" "" r01 9:16 "$DIVE_DUR" portrait`.
-Wrappers may expose that call more readably. Never mix portrait and desktop frame inputs.
-Result URLs expire, so the function downloads immediately. Read `cost.value` after every
-candidate and check `monid balance` between approved phases. `BLOCKED` is terminal (usually
-a workspace run/budget cap); surface it rather than retrying or changing account state.
+Present the candidate and endpoint comparisons. A connector must be explicitly approved
+before it enters the delivery manifest. Replacing a dive invalidates its adjacent
+connector(s).
 
-Qualification for a new or changed endpoint is two cheap 480p candidates: first, prompt plus
-a real first frame must preserve the opening composition and obey the requested motion;
-second, add a visibly different last frame and confirm the result lands on that composition.
-Compare frames visually and optionally use PSNR as supporting evidence. Composition and prop
-continuity—not a raw PSNR threshold—decide whether the seam qualifies. A route that supports
-only the first frame may serve architecture A, never architecture B connectors.
+## 7. Approved-only encoding and posters
 
-## Notes
+Retain Wan raw masters. Encode only exact approved ledger paths. Production sources must be
+1080p; never upscale a 720p draft.
 
-- `.[0].result_url` is the field on the `--wait --json` job object. `.min_result_url` is
-  a lower-res preview if you ever want it.
-- **NSFW fallback across models**: if one clip keeps getting flagged on seedance after
-  re-rolls + prompt scrubbing, regenerate just that clip on `kling3_0` with the SAME
-  start/end frames: `VMODEL=kling3_0; VOPTS="--mode std --sound off"; gen_conn 3 …` —
-  then restore your chain model. This preserves positional continuity but can introduce a
-  subtle grain/motion-character shift, so review that seam carefully in both directions.
-- **Previz on the cheap**: work through the chain one approved candidate at a time with
-  `VMODEL=seedance_2_0_mini`
-  (frame-locking intact, ~720p) to validate the journey and seams before spending
-  full-model credits — because it's still seamless, the previz translates directly to the
-  final render. Don't reach for reference-only models here: without `--start/--end-image`
-  they can't hold a seam, so their output can't be chained (SKILL Phase 4 rule).
-- If an individual job stalls, check `higgsfield workspace list` and that candidate's
-  `.err` file.
-- Paid video concurrency is intentionally **one**, regardless of account limits. The
-  approval gate is part of the deliverable, not a speed optimisation to remove.
+```powershell
+ffmpeg -v error -y -i $approvedSource -an `
+  -vf 'unsharp=5:5:0.8:5:5:0.0' `
+  -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p `
+  -g 8 -keyint_min 8 -sc_threshold 0 -movflags +faststart $deliveryVideo
+```
+
+Verify width/height/duration/fps with `ffprobe`. Extract each public poster from exact frame
+0 of its approved section video, never from a concept still:
+
+```powershell
+ffmpeg -v error -y -ss 0 -i $approvedSource -frames:v 1 -q:v 2 $poster
+ffmpeg -v error -y -i $poster -vf 'scale=1280:-2' -c:v libwebp -quality 84 $fullPoster
+ffmpeg -v error -y -i $poster -vf 'scale=960:-2' -c:v libwebp -quality 82 $poster960
+ffmpeg -v error -y -i $poster -vf 'scale=640:-2' -c:v libwebp -quality 80 $poster640
+ffmpeg -v error -y -i $poster -vf 'scale=32:-2,gblur=sigma=2' -c:v libwebp -quality 28 $lqip
+```
+
+Never upscale poster derivatives: omit a requested width above the source width. Visually
+compare all derivatives with the approved frame 0. Build exact approved section and
+connector manifests; do not use revision globs.
+
+## 8. Mobile delivery
+
+### Native portrait chain
+
+When the user approves native mobile, finish and lock desktop first. Generate a complete,
+independent 9:16 chain using portrait-approved stills and portrait-rendered boundaries. Use
+Wan 3.0 at `720P` for portrait tests and `1080P` for production sources; encode delivery
+files to 720 pixels wide, CRF 23, GOP 4.
+
+```powershell
+ffmpeg -v error -y -i $approvedPortraitSource -an `
+  -vf 'scale=720:-2,unsharp=5:5:0.6:5:5:0.0' `
+  -c:v libx264 -preset slow -crf 23 -pix_fmt yuv420p `
+  -g 4 -keyint_min 4 -sc_threshold 0 -movflags +faststart $mobileDelivery
+```
+
+Extract portrait posters from exact frame 0. Produce 720- and 480-wide first-picture
+sources plus a portrait LQIP. Wire `stillMobile`, `clipMobile`, and `connectorsMobile`.
+Desktop approval never approves portrait media.
+
+### Approved crop fallback
+
+If the user explicitly accepts a desktop-derived fallback, encode a smaller landscape file
+with GOP 4 and let `object-fit: cover` crop it. Present the crop for thumbs-up/down because
+it may lose the focal subject. Label it as a fallback, never “native mobile”.
+
+## 9. Failure handling
+
+- On an ambiguous creation response, inspect `wan task list --media-type video --output
+  json` before resubmitting. Never duplicate a possibly successful task.
+- On concurrency codes `4007`, `50000`, or `100101`, wait for existing tasks and refresh
+  auth status. Do not treat them as credit failures.
+- On `50001`, report insufficient currently usable credits. On `50004`, inspect credits,
+  auth status, and in-flight tasks before explaining the cause.
+- On `LOCAL_FILE_VALIDATION_FAILED`, follow structured `details.actual`, `details.limits`,
+  and `details.suggestedFix`. Never modify a source in place. Ask before cropping, padding,
+  upscaling, extending, or inventing audio.
+- On content-safety codes `9007`, `9008`, `9012`, or `10017`, preserve the candidate and
+  ask the user to revise or replace the affected input. Never silently downgrade the model.
+- On membership code `4018`, stop and tell the user an eligible Wan membership is required.
+- Treat `taskQuota.video` only as available concurrency. Use `wan credits --output json`
+  for credits.
+
+After every result, return to `review-workflow.md`. A successful task is still unapproved
+until the user sees it and gives an explicit thumbs-up.

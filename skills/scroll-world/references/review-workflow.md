@@ -1,18 +1,23 @@
 # Approval-gated media review
 
 Every stochastic image and video candidate is a human review checkpoint—including brand,
-scene, social and portrait image generation. Never batch, parallelize, queue, or
-auto-continue image or video generation, even when the provider, account, or tool supports
-concurrency. Deterministic derivatives such as resizes, LQIPs and extracted frames do not
-need a new thumbs-up, but must be visually compared with their approved source.
+scene, social and portrait image generation. Generate images one at a time. Up to three
+independent Wan video candidates may run concurrently only after the user approves that
+batch's spend and only when `wan auth status --output json` reports enough available
+`taskQuota.video`; use the lower number. Never parallelize dependency-linked clips or
+competing revisions of one slot. Deterministic derivatives such as resizes, LQIPs and
+extracted frames do not need a new thumbs-up, but must be visually compared with their
+approved source. If any derivative will itself be used in a future prompt or generation
+input, present it with the same thumbs-up/down gate first.
 
 ## Candidate cycle
 
-1. Generate one candidate only. Name it by slot and revision, for example
+1. Generate one candidate per slot/revision. Name it by slot and revision, for example
    `desktop-still-shop-r01.png`, `desktop-dive-shop-r01.mp4`, or
    `mobile-connector-03-r02.mp4`. Never overwrite a prior candidate.
-2. Record model, mode, resolution, bitrate, duration, aspect ratio, prompt, input hashes,
-   quality, job ID, pre/post credit balance, measured cost, output path, and creation time.
+2. Record model/modelVersion, resolution, duration, aspect ratio, audio setting, prompt,
+   input hashes, quality, Wan task ID, pre/post credit balance, measured deduction when
+   observable, output path, and creation time.
    Mark fields that do not apply to a still as such.
 3. Present the actual full-resolution still in chat. For video, create a lightweight review
    proxy if the raw file is awkward to display, plus first, 25%, 50%, 75%, and final-frame
@@ -24,7 +29,8 @@ need a new thumbs-up, but must be visually compared with their approved source.
      style/colour consistency, artifacts, people/text/logos, framing/crop, opening frame,
      final frame, or seam continuity.
 5. Stop. Silence, elapsed time, or a technically valid render is never approval.
-6. On approval, mark the exact candidate immutable in the ledger. Only then continue.
+6. On approval, mark the exact candidate immutable in the ledger. Only then may its pixels,
+   frames, video, or review feedback be used in any future prompt or dependent generation.
 7. On rejection, preserve it and log the notes. If the feedback is precise and the
    revision stays within the already approved allowance, a thumbs-down authorizes one
    revised candidate. Otherwise show the proposed prompt/input change and incremental
@@ -38,7 +44,8 @@ before a replacement when the existing allowance does not cover one.
 Maintain `review/approval-ledger.md` (or equivalent project artifact) with one row per
 image or video candidate: media type, slot, orientation, revision, job ID, settings,
 credits, status, feedback, and approved filename. Include rejected generations in final
-credit reporting.
+credit reporting. Treat `taskQuota.video` as available concurrency, never as credits or a
+daily generation allowance.
 
 ## Dependency rules
 
@@ -60,10 +67,11 @@ the regeneration cost before reopening it.
 
 ### Architecture B — dives and connectors
 
-Generate and approve every dive one at a time. Lock that approved dive set before creating
-connectors. Then generate and approve connectors one at a time. Replacing a dive after
-connector work invalidates its adjacent connector(s); replacing a connector affects only
-that connector.
+Generate one candidate per dive slot and review each separately; independent submissions may
+share an explicitly approved safe-concurrency batch. Lock that approved dive set before
+creating connectors. Apply the same per-candidate review rule to independent connectors.
+Replacing a dive after connector work invalidates its adjacent connector(s); replacing a
+connector affects only that connector.
 
 ### Draft to production
 
@@ -73,10 +81,10 @@ independently. Do not upscale a draft and call it the production master.
 
 ### Desktop and native mobile
 
-Finish and lock desktop first. Then create the independent 9:16 chain, one candidate at a
-time, with its own ledger entries and approvals. Desktop approval never carries over to
-portrait. An FFmpeg crop fallback spends no Higgsfield video credits, but still requires
-visual approval because it may lose the focal subject.
+Finish and lock desktop first. Then create the independent 9:16 chain with its own ledger
+entries and approvals. Desktop approval never carries over to portrait. An FFmpeg crop
+fallback spends no Wan credits, but still requires visual approval because it may lose the
+focal subject.
 
 ## Review standards
 
