@@ -1,59 +1,55 @@
-# Pipeline: approved images + Wan 3.0 video
+# Pipeline: approved images + provider-locked video
 
 ## Contents
 
 1. Preflight and fixed settings
 2. Candidate naming and approval ledger
-3. Images outside Wan
-4. Wan submission and result handling
+3. Images outside the video provider
+4. Provider submission and result handling
 5. Architecture A legs
 6. Architecture B dives and connectors
-7. Approved-only encoding and posters
-8. Mobile delivery
-9. Failure handling
+7. Optional first-segment fan-out
+8. Approved-only encoding and posters
+9. Mobile delivery
+10. Failure handling
 
 Use native PowerShell on Windows and native Bash on Unix-like systems. Do not pass paths
 between shells. Every `wan` call made by an agent must use `--output json`. Never install,
-update, authenticate, buy credits, or switch accounts without explicit user approval.
+update, authenticate, buy credits, or switch accounts without explicit user approval. Read
+`video-providers.md` completely before any video-provider call.
 
 ## 1. Preflight and fixed settings
 
-Before the first Wan command in a session:
+Before media work:
 
 ```powershell
-wan --version
-wan update --check --output json
-wan --help
-wan auth status --output json
-wan auth list --output json
-wan credits --output json
-wan task list --page-size 10 --media-type video --output json
 ffmpeg -version
 ffprobe -version
 ```
 
-If an update is available, ask before running it; if the user declines, stop video generation
-because the current top model cannot be guaranteed. Stop if authentication or membership is
-invalid. Read `taskQuota.video` as the number of video submissions available now; it is not
-a daily generation allowance or credit balance. Summarize only authentication state, active
-site/account label, quotas, and credits; do not repeat profile/address data from auth output.
+Ask for or read the user's provider/model choice and immediately write
+`review/run-manifest.json`. Then run only that adapter's preflight from
+`video-providers.md`. Stop if authentication or model access is invalid. Summarize only the
+necessary account/authentication state and live concurrency; never expose credentials or
+unrelated profile data.
 
 Lock these settings for the build:
 
 ```text
-VIDEO_MODEL = current top Wan model (Wan 3.0 / modelVersion=3_0 at authoring time)
-DRAFT_RESOLUTION = 720P
-PRODUCTION_RESOLUTION = 1080P
+VIDEO_PROVIDER = wan | fal.ai
+VIDEO_MODEL = current top Wan model | fal-ai/kling-video/v3/pro/image-to-video
+WAN_DRAFT_RESOLUTION = 720P
+WAN_PRODUCTION_RESOLUTION = 1080P
 VIDEO_AUDIO = false
 DESKTOP_INPUT_ASPECT = 16:9
 PORTRAIT_INPUT_ASPECT = 9:16
-MAX_VIDEO_CONCURRENCY = min(3, live taskQuota.video)
+MAX_VIDEO_CONCURRENCY = min(3, selected provider's live/reported limit)
 ```
 
-Do not select an older model for drafts. Re-run the version/update check for a later build
-instead of treating `wan3.0` as permanently top. With current Wan 3.0 frame-to-video, omit
-`--ratio` (or use only `adaptive`): output follows the first frame. Therefore create exact
-16:9 or 9:16 boundary frames before submission and do not mix aspects within a chain.
+Do not switch provider/model for drafts. For Wan, re-check the current top model and use
+720P/1080P. fal/Kling Pro exposes no resolution parameter: do not invent one or switch to
+Standard; verify returned dimensions and reject a sub-1080 production source. For both,
+create exact 16:9 or 9:16 boundary frames before submission and never mix aspects in a chain.
 
 Use explicit fixed durations for scroll pacing. Eight seconds is a good section-leg/dive
 starting point; five seconds is a good connector starting point. Do not use Smart Duration
@@ -61,32 +57,41 @@ for a frame-locked chain because section timing must remain predictable.
 
 ## 2. Candidate naming and approval ledger
 
-Create project-local `review/` and scratch/output directories. Keep every revision:
+Create project-local `review/` and scratch/output directories. Prefix scene media with its
+two-digit narrative order and retain `_rNN` as the final stem suffix:
 
 ```text
-desktop-still-farm-r01.png
-desktop-leg-farm-r01.mp4
-desktop-dive-farm-r01.mp4
-desktop-connector-01-r01.mp4
-portrait-dive-farm-r01.mp4
+01_desktop-still-farm_r01.png
+01_desktop-leg-farm_r01.mp4
+01_desktop-dive-farm_r01.mp4
+01-02_desktop-connector-farm-to-shop_r01.mp4
+01_portrait-dive-farm_r01.mp4
+01_desktop-dive-farm_v02_r01.mp4
 ```
 
-Maintain `review/approval-ledger.md`. Record slot, orientation, revision, prompt path,
-input SHA-256 hashes, model/modelVersion, resolution, duration, audio setting, Wan task ID,
-pre/post credits, saved raw path, dimensions, review status, feedback, and approved path.
-Never overwrite a candidate and never use globs to discover an approved input.
+Use the same scene ordinal for its still, leg, dive, extracted boundary frames, posters, and
+delivery assets. Name a connector with both endpoint ordinals (`01-02_`). Insert optional
+fan-out variant `_vNN` immediately before `_rNN`. Zero-pad order and revision to at least two
+digits. Never overwrite a candidate or use a glob to infer order/approval.
+
+Maintain `review/approval-ledger.md`. Record order, slot, optional branch, orientation,
+revision, prompt path, input SHA-256 hashes, provider, model/endpoint, resolution when
+provider-controlled, returned dimensions, duration, audio setting, request/task ID, saved
+raw path, review status, feedback, and approved path. Record measured billing data only when
+readily available; do not turn every review into a price update.
 
 Before paid video generation:
 
-1. Show the accepted-media count plus revision allowance.
-2. Show live Wan credits and available video concurrency.
-3. Get explicit spend approval.
-4. Generate one representative 720p clip, review it, then recalibrate the remaining plan.
+1. Show the accepted-media count plus revision allowance and live provider concurrency.
+2. Get explicit permission for one representative paid video.
+3. Generate that clip through the locked provider.
+4. After it finishes, estimate the remaining work once using `video-providers.md` and ask
+   whether to continue. Do not repeat price throughout unless scope materially changes.
 
-## 3. Images outside Wan
+## 3. Images outside the video provider
 
 Use the direct ChatGPT/Codex image-generation tool for every stochastic image. Do not call
-`wan text2image`, `wan image2image`, or `wan sequential_image` in this skill.
+Wan, fal, or Kling image generation from this skill.
 
 For each image slot:
 
@@ -95,116 +100,45 @@ For each image slot:
 3. Present the actual image, prompt, image tool/model when exposed, dimensions, and revision.
 4. Ask for `👍 Approve` or `👎 Reject` plus feedback.
 5. On rejection, revise only what the feedback warrants and generate one new revision.
-6. Use the pixels in later prompts or Wan inputs only after explicit approval.
+6. Use the pixels in later prompts or video-provider inputs only after explicit approval.
 
 After every scene still is individually approved, show an approved-files-only contact sheet
 and obtain a separate cohesion approval. If direct image generation is unavailable, stop
-and ask the user to supply images or approve another non-Wan image source.
+and ask the user to supply images or approve another image source.
 
 Concept images are conditioning inputs, not public posters. Public posters come from exact
 frame 0 of approved videos.
 
-## 4. Wan submission and result handling
+## 4. Provider submission and result handling
 
-### Command contracts
+Create a candidate-specific directory and prompt file. Submit with the exact locked adapter
+from `video-providers.md`; never use provider auto-selection. Persist the full request payload,
+request/task ID, provider/model, input hashes, and target candidate path immediately.
 
-Single first frame:
+Wan tasks may take several hours and must remain resumable from the stored task ID. fal/Kling
+normally finishes in minutes, so wait through its queue/status flow and keep the user updated.
+Neither elapsed time nor a transient status authorizes duplicate submission.
 
-```powershell
-wan frame2video `
-  --first-frame <approved-frame-path> `
-  --prompt <prompt-text> `
-  --resolution 720P `
-  --duration 8 `
-  --audio-output=false `
-  --output json
-```
-
-First and last frame:
+After download, verify the exact candidate:
 
 ```powershell
-wan frame2video `
-  --first-frame <approved-start-path> `
-  --last-frame <approved-end-path> `
-  --prompt <prompt-text> `
-  --resolution 720P `
-  --duration 5 `
-  --audio-output=false `
-  --output json
+ffprobe -v error -show_entries stream=index,codec_type,codec_name,width,height,r_frame_rate `
+  -show_entries format=duration -of json $candidatePath
 ```
 
-Use `1080P` for every production render. `720P` is only for tests/previz. Do not pass
-`--generation-mode`, `--think-mode`, `--thinking-mode`, uploaded audio, or a legacy
-`--model` override. Local PNG/JPEG/WebP inputs are validated and uploaded automatically.
-
-Run `--dry-run` first when changing command shape or media inputs. Confirm the JSON request
-contains `modelVersion: "3_0"`, `audio: false`, the intended resolution, `baseImage`, and
-`tailImage` when supplied. A dry run does not prove visual quality and is not approval.
-
-### Safe PowerShell candidate submission
-
-Use a candidate-specific directory and prompt file. The example submits one authorized job:
-
-```powershell
-$candidate = 'desktop-connector-01-r01'
-$candidateDir = Join-Path $work $candidate
-New-Item -ItemType Directory -Force -Path $candidateDir | Out-Null
-
-$auth = wan auth status --output json | ConvertFrom-Json
-if (-not $auth.ok -or -not $auth.authenticated) { throw 'Wan authentication required.' }
-if ([int]$auth.data.taskQuota.video -lt 1) { throw 'No Wan video submission slot is currently available.' }
-
-$before = wan credits --output json | ConvertFrom-Json
-$prompt = Get-Content -Raw -LiteralPath (Join-Path $work 'conn_01.txt')
-$submission = wan frame2video `
-  --first-frame $approvedStart `
-  --last-frame $approvedEnd `
-  --prompt $prompt `
-  --resolution $resolution `
-  --duration 5 `
-  --audio-output=false `
-  --output json | ConvertFrom-Json
-
-$taskId = $submission.taskId
-if (-not $taskId) { throw 'Wan did not return a task ID.' }
-$submission | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath (Join-Path $candidateDir 'submission.json')
-```
-
-Do not block silently for minutes. Poll with short `wan result get <taskId> --output json`
-calls and keep the user updated. After success, save the watermark-free result:
-
-```powershell
-$result = wan result get $taskId --save --save-dir $candidateDir --output json | ConvertFrom-Json
-if ($result.statusLabel -ne 'succeeded' -or $result.savedFiles.Count -lt 1) {
-  throw "Wan task $taskId did not produce a saved video."
-}
-
-$raw = $result.savedFiles[0].path
-$candidatePath = Join-Path $work "$candidate.mp4"
-if (Test-Path -LiteralPath $candidatePath) { throw "Candidate path already exists: $candidatePath" }
-Copy-Item -LiteralPath $raw -Destination $candidatePath
-$after = wan credits --output json | ConvertFrom-Json
-$measuredDeduction = [int]$before.availableCount - [int]$after.availableCount
-ffprobe -v error -show_entries stream=width,height,r_frame_rate -show_entries format=duration `
-  -of json $candidatePath
-```
-
-`--save` selects the watermark-free `downloadUrl` by default. Use `--with-watermark` only
-when the user explicitly asks. Record the result's `savedFiles[].watermark` value.
-
-Also inspect stream types. Wan may retain an effectively silent AAC track even when the
-request records `audio: false`; measure it rather than assuming. Reject any audible generated
-sound, and always use `-an` in delivery encoding so the homepage asset has no audio stream.
+Reject audible generated sound. Always use `-an` during delivery encoding even when the
+request disabled audio. A valid file and matching technical metadata still require review.
 
 ### Concurrency
 
-Immediately before every submission, refresh auth status. Never have more than three
-skill-created video tasks in flight, and never exceed the lower available
-`taskQuota.video`. The live quota already accounts for in-flight tasks.
+Immediately before every submission, refresh the selected provider's live/reported
+concurrency. Never have more than three skill-created video tasks in flight. For Wan, never
+exceed available `taskQuota.video`. For fal/Kling, assume one concurrent request unless the
+live MCP/account reports a higher limit.
 
 Parallel submission is allowed only when all are true:
 
-- the user explicitly approved that named batch's spend;
+- the user explicitly authorized that named batch;
 - the jobs are independent (for example, approved architecture-B dives);
 - each slot has one candidate, not multiple speculative revisions;
 - every result will be presented and approved separately;
@@ -219,15 +153,9 @@ Leg 1 starts from the approved first-scene still. Every later leg starts from th
 final rendered frame of its approved predecessor. Generate and review one leg before the
 next because the dependency is strict.
 
-```powershell
-wan frame2video `
-  --first-frame $exactApprovedStart `
-  --prompt (Get-Content -Raw -LiteralPath $legPrompt) `
-  --resolution $resolution `
-  --duration 8 `
-  --audio-output=false `
-  --output json
-```
+Submit through the locked adapter with `$exactApprovedStart`, no end frame, the exact leg
+prompt, an 8-second starting duration, and generated audio off. For fal/Kling, append the
+required brisk-glide clause and use the negative prompt from `video-providers.md`.
 
 After download, extract the final frame from the exact candidate:
 
@@ -237,7 +165,7 @@ ffmpeg -v error -y -sseof -1 -i $candidateVideo -vf reverse -frames:v 1 -q:v 2 $
 
 Present the full video plus first/25%/50%/75%/final review frames. Only after approval may
 `$candidateLastFrame` become the next leg's `--first-frame`. If an approved upstream leg is
-replaced, invalidate and recost every downstream leg.
+replaced, invalidate every downstream leg and explain the regeneration scope.
 
 Architecture A uses approved legs as section clips and has no connectors.
 
@@ -247,15 +175,9 @@ Architecture A uses approved legs as section clips and has no connectors.
 
 Each dive starts from its exact approved scene still:
 
-```powershell
-wan frame2video `
-  --first-frame $approvedSceneStill `
-  --prompt (Get-Content -Raw -LiteralPath $divePrompt) `
-  --resolution $resolution `
-  --duration 8 `
-  --audio-output=false `
-  --output json
-```
+Submit through the locked adapter with `$approvedSceneStill`, no end frame, the exact dive
+prompt, an 8-second starting duration, and generated audio off. For fal/Kling, use only
+`prompt`, append the brisk-glide clause, and never send `multi_prompt`.
 
 Dives are independent and may use up to the safe live concurrency after the representative
 clip and explicit batch approval. Present each candidate separately. Lock the complete dive
@@ -275,25 +197,39 @@ Never use concept stills as connector endpoints.
 
 ### Connectors
 
-```powershell
-wan frame2video `
-  --first-frame $approvedPreviousLast `
-  --last-frame $approvedNextFirst `
-  --prompt (Get-Content -Raw -LiteralPath $connectorPrompt) `
-  --resolution $resolution `
-  --duration 5 `
-  --audio-output=false `
-  --output json
-```
+Submit through the locked adapter with `$approvedPreviousLast` and `$approvedNextFirst`, the
+exact connector prompt, a 5-second starting duration, and generated audio off. For
+fal/Kling, map these to `start_image_url` and `end_image_url`, and use only `prompt`.
 
 Present the candidate and endpoint comparisons. A connector must be explicitly approved
 before it enters the delivery manifest. Replacing a dive invalidates its adjacent
 connector(s).
 
-## 7. Approved-only encoding and posters
+## 7. Optional first-segment fan-out
 
-Retain Wan raw masters. Encode only exact approved ledger paths. Production sources must be
-1080p; never upscale a 720p draft.
+Fan out only when the user asks to compare named directions or variations. Record every
+branch in `review/run-manifest.json` with `branchId`, concept, provider/model, prompt path,
+input path/hash, status, and candidate paths.
+
+- If art direction/composition differs, create and approve a separate start still for each
+  branch before generating that branch's first video.
+- If only motion prompting differs, reuse the same exact approved start still.
+- Name variants with `_vNN_rNN`, for example
+  `01_desktop-dive-community_v02_r01.mp4`.
+- Independent branches may use only the selected provider's safe concurrency. fal/Kling
+  normally runs them sequentially because its default concurrency is one.
+- Present each piece of media with its own thumbs-up/down. Then present the viable first
+  videos together and ask for one explicit winning branch.
+- Lock that winner before generating scene 2 or any connector. Preserve non-winning branches
+  as inactive; never let their frames, prompts, or feedback condition the winning chain.
+
+Fan-out authorization covers only the named candidates requested by the user. It is not
+permission for speculative extra variations or automatic rerolls.
+
+## 8. Approved-only encoding and posters
+
+Retain raw provider masters. Encode only exact approved ledger paths. Production sources
+must be 1080p; never upscale a 720p or otherwise undersized draft.
 
 ```powershell
 ffmpeg -v error -y -i $approvedSource -an `
@@ -317,14 +253,15 @@ Never upscale poster derivatives: omit a requested width above the source width.
 compare all derivatives with the approved frame 0. Build exact approved section and
 connector manifests; do not use revision globs.
 
-## 8. Mobile delivery
+## 9. Mobile delivery
 
 ### Native portrait chain
 
 When the user approves native mobile, finish and lock desktop first. Generate a complete,
-independent 9:16 chain using portrait-approved stills and portrait-rendered boundaries. Use
-Wan 3.0 at `720P` for portrait tests and `1080P` for production sources; encode delivery
-files to 720 pixels wide, CRF 23, GOP 4.
+independent 9:16 chain using portrait-approved stills and portrait-rendered boundaries. For
+Wan, use the locked top model at `720P` for portrait tests and `1080P` for production. For
+fal/Kling, use the locked Pro endpoint without a resolution field and verify a 1080p
+portrait source. Encode delivery files to 720 pixels wide, CRF 23, GOP 4.
 
 ```powershell
 ffmpeg -v error -y -i $approvedPortraitSource -an `
@@ -343,9 +280,10 @@ If the user explicitly accepts a desktop-derived fallback, encode a smaller land
 with GOP 4 and let `object-fit: cover` crop it. Present the crop for thumbs-up/down because
 it may lose the focal subject. Label it as a fallback, never “native mobile”.
 
-## 9. Failure handling
+## 10. Failure handling
 
-- On an ambiguous creation response, inspect `wan task list --media-type video --output
+- Follow provider-specific recovery in `video-providers.md` and `media-gotchas.md`.
+- On an ambiguous Wan creation response, inspect `wan task list --media-type video --output
   json` before resubmitting. Never duplicate a possibly successful task.
 - On concurrency codes `4007`, `50000`, or `100101`, wait for existing tasks and refresh
   auth status. Do not treat them as credit failures.
@@ -359,6 +297,9 @@ it may lose the focal subject. Label it as a fallback, never “native mobile”
 - On membership code `4018`, stop and tell the user an eligible Wan membership is required.
 - Treat `taskQuota.video` only as available concurrency. Use `wan credits --output json`
   for credits.
+- For fal/Kling, inspect the existing queue request ID/status before retrying. Correct MCP
+  authentication without exposing `FAL_KEY`; never switch to multi-prompt, elements,
+  Standard, or another model as error recovery.
 
 After every result, return to `review-workflow.md`. A successful task is still unapproved
 until the user sees it and gives an explicit thumbs-up.

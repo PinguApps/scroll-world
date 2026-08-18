@@ -1,6 +1,6 @@
 ---
 name: scroll-world
-description: Build a production-quality immersive AI-generated, scroll-scrubbed homepage in a Blazor Web App. Use for scroll cinematics, 3D or diorama worlds, fly-through landing pages, or turning a business journey into an interactive homepage. Covers discovery, brand identity, approval-gated still generation outside Wan, Wan 3.0 video generation through the wan CLI, responsive encoding, a proven smooth scroll engine, homepage SSR/SEO/AEO, Blazor InteractiveAuto lifecycle, accessibility, regression tests, and Lighthouse/browser QA. Supporting pages are outside scope except minimal placeholders needed for navigation.
+description: Build a production-quality immersive AI-generated, scroll-scrubbed homepage in a Blazor Web App. Use for scroll cinematics, 3D or diorama worlds, fly-through landing pages, or turning a business journey into an interactive homepage. Covers discovery, brand identity, approval-gated still generation outside the video provider, provider-locked video generation through Wan 3.0 or fal.ai Kling Video v3 Pro, responsive encoding, a proven smooth scroll engine, homepage SSR/SEO/AEO, Blazor InteractiveAuto lifecycle, accessibility, regression tests, and Lighthouse/browser QA. Supporting pages are outside scope except minimal placeholders needed for navigation.
 ---
 
 # Scroll World for Blazor
@@ -53,26 +53,32 @@ Read repository instructions and inspect the solution, current render modes, rou
 
 Confirm the app is a server-hosted Blazor Web App capable of InteractiveAuto. If it lacks a WebAssembly client or enabling Auto requires a structural conversion, explain that change and get approval before doing it.
 
-Audit prerequisites without mutating the machine or account:
+Audit prerequisites without mutating the machine or account. If the video provider is not
+yet selected, defer its provider-specific checks until Phase 2:
 
-- `wan` installed and current. Run `wan --version`, `wan update --check --output json`,
-  `wan auth status --output json`, and `wan credits --output json`. If an update exists,
-  ask before running it; if the user declines, stop video generation because the current
-  top model cannot be guaranteed. Treat `taskQuota.video` as currently available concurrent video
-  submission slots, not a daily allowance. Never submit more than three video tasks or the
-  lower live quota.
+- For Wan, require the current `wan` CLI and authenticated account. Run `wan --version`,
+  `wan update --check --output json`, `wan auth status --output json`, and
+  `wan credits --output json`. If an update exists, ask before running it. Treat
+  `taskQuota.video` as currently available concurrent submissions, not a daily allowance.
+- For fal.ai, prefer the configured fal MCP server and require access to
+  `fal-ai/kling-video/v3/pro/image-to-video`. Confirm authentication without exposing
+  `FAL_KEY`. If the MCP is unavailable, stop and explain the fallback in
+  `references/video-providers.md` rather than silently changing provider or model.
 - `ffmpeg` and `ffprobe` on PATH.
 - A native script route for the media pipeline: PowerShell 7 on Windows or Bash 3.2+ with
   `jq` on Unix-like systems. Do not assume one shell from another.
 - Python 3 + Pillow only if knockout or LQIP tooling needs it.
-- A direct ChatGPT/Codex image-generation tool for every stochastic still. Never use Wan's
-  image commands in this skill. If direct image generation is unavailable, stop and ask the
-  user to supply images or approve another non-Wan image source.
+- A direct ChatGPT/Codex image-generation tool for every stochastic still. Never use the
+  selected video provider for images in this skill. If direct image generation is
+  unavailable, stop and ask the user to supply images or approve another image source.
 - A supported .NET SDK, the repository’s JS package runner when applicable, and an
   existing Chrome/Edge or browser-automation route for real interaction QA.
 - An existing Lighthouse installation/runner for performance auditing.
 
-If anything is missing, report the exact requirement and command. Never install tools, authenticate, switch workspaces, buy/use credits, or change account state without explicit approval. Run generation only after the user approves the estimated spend.
+If anything is missing, report the exact requirement and command. Never install tools,
+authenticate, switch workspaces, buy/use credits, or change account state without explicit
+approval. Generate only the authorized first paid sample; after it completes, present the
+single remaining-work estimate before continuing.
 
 ## Phase 2 — Interview and lock the brief
 
@@ -94,24 +100,34 @@ Ask only decisions that change the result. Group questions into short rounds.
    native portrait approximately doubles video spend and may add `N` portrait image
    generations when separate compositions are required. Never silently call a centre
    crop “mobile-optimised.”
-6. Quality, always inspect the current CLI and account state. Use the top Wan video model;
-   with the current CLI this is Wan 3.0 (`modelVersion=3_0`). Do not select an older model
-   for cheaper drafts. Re-check the CLI default before each build so “top model” does not
-   become a stale hard-coded assumption.
+6. Video provider and model, always ask unless the invocation already specifies them:
+   - **Wan:** current top Wan model through the `wan` CLI; presently Wan 3.0.
+   - **fal.ai:** exactly `fal-ai/kling-video/v3/pro/image-to-video` through the fal MCP.
+   Write the selection to `review/run-manifest.json` as `videoProvider` and `videoModel`.
+   Use that exact provider/model for every draft, orientation, revision, and production
+   clip in the run. Never silently switch providers, tiers, or model endpoints.
 
-   | Tier | Wan settings | Purpose |
+   | Provider | Draft/previz | Production |
    |---|---|---|
-   | Draft/previz | Wan 3.0, `720P`, generated audio off | Motion, composition, and seam validation |
-   | Production | Wan 3.0, `1080P`, generated audio off | Required final master |
+   | Wan | Current top model, `720P`, generated audio off | Same model, `1080P`, generated audio off |
+   | fal.ai Kling v3 Pro | Same Pro endpoint, generated audio off; no resolution field exists | Same Pro endpoint; verify the returned source is a valid 1080p master |
+
+   Do not use Kling Standard merely to obtain a cheaper 720p draft. A downscaled review
+   proxy is not a cheaper generation. If fal's Pro result does not meet production source
+   requirements, stop rather than upscaling or changing endpoint.
 
    Generate all stochastic stills with the direct ChatGPT/Codex image-generation tool,
-   using one approved style/model path throughout. Never call `wan text2image`,
-   `wan image2image`, or `wan sequential_image` from this skill. Disable generated video
-   audio with `--audio-output=false`; the homepage is muted.
-7. CTA destinations: reuse existing routes/external destinations, or ask permission to create
+   using one approved style/model path throughout. Never call a video provider's image
+   generator from this skill. Disable generated video audio; the homepage is muted.
+7. Optional comparison fan-out: when the user wants to compare major directions—such as
+   diorama versus photoreal, or alternate camera treatments—offer to generate the first
+   segment for each named option. Lock separate branch prompts and inputs, approval-gate
+   every still and video, then require one explicit winning branch before downstream work.
+   Do not use rejected or unselected branches to inform later prompts.
+8. CTA destinations: reuse existing routes/external destinations, or ask permission to create
    minimal “Coming soon” placeholders for missing internal routes. A placeholder contains only
    a heading, short status sentence, and link home; never turn it into a substantive page.
-8. Deployment/media origin: local assets for development or a CDN. Capture the canonical
+9. Deployment/media origin: local assets for development or a CDN. Capture the canonical
    production origin for homepage canonical/social metadata and homepage JSON-LD.
 
 Calculate `N images + (2N−1) accepted videos` for architecture B, or `N images + N
@@ -119,17 +135,18 @@ accepted sequential legs` for A. Native mobile doubles video work and adds `N` i
 generations when it needs separately generated portrait compositions; a reviewed
 floating-island canvas derivative adds no generation. Show accepted-media base work
 separately from a realistic 25–50% revision allowance (more for ambitious motion). Report
-the live Wan credit balance and current video concurrency; never invent a fixed price when
-the CLI does not expose one.
+the selected provider's available concurrency, but do not narrate pricing throughout.
 
-Use staged spend approval because live prices vary:
+Use one staged estimate:
 
-1. Approve the preflight estimate before any paid generation.
-2. Generate/review one image candidate through the non-Wan image tool and confirm the
+1. Confirm the accepted-media count, revision allowance, and permission to generate one
+   paid representative video.
+2. Generate/review one image candidate through the direct image tool and confirm the
    remaining image plan before continuing.
-3. After the approved image set/cohesion gate, generate/review one representative 720p Wan
-   video, measure the credit change, recalculate the remaining video budget, and confirm it
-   before continuing.
+3. After the approved image set/cohesion gate, generate one representative video. Once it
+   completes, use its measured/provider rate to estimate the remaining video work once and
+   confirm continuation. Mention price again only if scope, provider, model, duration, or
+   revision allowance changes materially.
 
 Never treat a budget allowance as permission to batch or auto-reroll.
 
@@ -159,36 +176,37 @@ requested; preserve and report existing site behaviour instead.
 
 ## Phase 4 — Generate a seamless media chain
 
-Read `references/prompts.md`, `references/pipeline.md`, and `references/media-gotchas.md` completely before generating.
+Read `references/prompts.md`, `references/pipeline.md`, `references/video-providers.md`, and
+`references/media-gotchas.md` completely before generating.
 
-Use `wan frame2video` for every generated clip. Pass local boundary-frame paths directly;
-the CLI validates and uploads them. Use `--first-frame` for each section leg/dive and add
-`--last-frame` for architecture-B connectors. With Wan 3.0 frame-to-video, let the output
-ratio follow the input frame (`adaptive`); prepare approved 16:9 desktop or 9:16 portrait
-boundary frames before submission. Always pass `--resolution 720P` for tests or
-`--resolution 1080P` for production, `--audio-output=false`, and `--output json`.
+Use the locked adapter in `references/video-providers.md` for every generated clip. Supply
+the approved first frame for each leg/dive and the optional approved last frame for
+architecture-B connectors. Input aspect determines the output composition, so prepare
+approved 16:9 desktop or 9:16 portrait boundaries before submission. Always disable audio.
 
-Before submissions, read `taskQuota.video` from `wan auth status --output json`. The maximum
-parallelism is `min(3, taskQuota.video)`. Architecture-A legs remain sequential because each
-depends on the previous approved final frame. Architecture-B dives/connectors may use the
-available slots only when candidates are independent, the user approved the batch spend,
-and every candidate still receives its own review. Never start downstream prompting from an
-unapproved candidate.
+Use maximum parallelism `min(3, live provider concurrency)`. Wan derives live availability
+from `taskQuota.video`; fal Kling defaults to one concurrent request unless the account/tool
+reports a higher limit. Architecture-A legs remain sequential. Architecture-B dives,
+connectors, or named fan-out branches may share available slots only when independent and
+explicitly authorized. Every result still receives separate review. Never start downstream
+prompting from an unapproved candidate.
 
-Use one byte-identical style preamble, palette, lens/lighting language, and still source
-throughout. Generate and approve every stochastic image through
+After any comparison fan-out is resolved, use the winning byte-identical style preamble,
+palette, lens/lighting language, and still source throughout. Generate and approve every stochastic image through
 `references/review-workflow.md`, exactly one candidate at a time. After every scene still is
-individually approved, present a contact sheet of approved stills for final world-level
-cohesion approval. Do not begin video generation before that approval.
+individually approved in the selected branch, present a contact sheet containing only those
+approved winning-branch stills for final world-level cohesion approval. Do not begin the
+main video chain before that approval. A user-authorized first-segment fan-out may run before
+the final winning-branch contact sheet, but each branch input still must already be approved.
 
 Generate all media through the approval gate in `references/review-workflow.md`:
 
 1. Generate one image candidate at a time. Generate at most three independent video
-   candidates concurrently, never exceeding the lower live Wan quota; use one-at-a-time
-   whenever dependency order requires it.
-2. Download it and present the actual candidate with its prompt, model/source, dimensions,
-   quality/settings, revision number, and measured credit deduction where applicable. For
-   video, also create review frames/proxy and report duration.
+   candidates concurrently, never exceeding the selected provider's lower live limit; use
+   one-at-a-time whenever dependency order requires it.
+2. Download it and present the actual candidate with its prompt, provider/model, dimensions,
+   settings, order/branch, and revision. For video, also create review frames/proxy and
+   report duration. Do not repeat pricing during every review.
 3. Wait for an explicit thumbs-up/approval or thumbs-down with feedback.
 4. On rejection, preserve the old candidate, record the fault, revise only what the
    feedback warrants, and generate one replacement within the approved revision budget.
@@ -206,9 +224,9 @@ The seam rule is absolute:
   previous leg’s exact start frame.
 - Architecture B: connector start = previous dive’s actual final frame; connector end = next dive’s actual first frame. Never use the original concept still as a connector endpoint.
 
-Use the current top Wan video model across the complete chain. At present that is Wan 3.0.
-Verify with the current CLI before the first candidate and never silently fall back to an
-older model.
+Use the provider/model locked in `review/run-manifest.json` across the complete chain. For
+Wan, verify the current top model before the first candidate. For fal, use only the exact
+Kling v3 Pro endpoint above. Never silently fall back or switch models.
 
 Keep raw outputs. Production source renders are 1080p. Encode H.264 at CRF
 about 20, GOP 8, fixed keyframe interval, yuv420p, no audio, faststart, with restrained
@@ -278,7 +296,7 @@ Deliver:
 - The finished Blazor homepage integration and generated assets.
 - A short list of approved choices and tuned per-section pacing/focus values.
 - Build/test/Lighthouse/network results.
-- Media spend, Wan task IDs/model, and rerolls.
+- Approximate media spend, provider request/task IDs, locked model, and rerolls.
 - Any deployment assumptions. For a CDN such as Bunny, recommend versioned immutable URLs, Brotli for text assets, correct MIME/CORS, long cache lifetimes, and byte-range support; Blob loading still provides robust local seekability.
 - A clear note if mobile is desktop fallback/crop rather than native portrait.
 - A clear boundary note that substantive supporting pages and site-wide SEO/AEO remain
@@ -289,7 +307,8 @@ Do not claim completion until the solution builds, relevant automated tests pass
 ## Reference routing
 
 - `references/prompts.md` — intake and image/video prompt patterns.
-- `references/pipeline.md` — non-Wan still generation, Wan video generation, frame extraction, encoding, native mobile chain.
+- `references/pipeline.md` — provider-neutral still/video orchestration, naming, fan-out, frame extraction, encoding, and native mobile chain.
+- `references/video-providers.md` — exact Wan and fal.ai Kling v3 Pro submission, waiting, payload, and failure contracts.
 - `references/scrub-engine.js` — canonical engine; copy rather than reimplement.
 - `references/blazor-integration.md` — exact SSR/InteractiveAuto and enhanced-navigation wiring.
 - `references/homepage-foundation.md` — homepage SSR/SEO/AEO, accessibility, LQIP, and CDN.

@@ -1,6 +1,6 @@
 {
   "name": "scroll-world",
-  "description": "Build a production-quality homepage in a Blazor Web App around an immersive AI-generated scroll-scrubbed camera flight, including approval-gated non-Wan images and Wan 3.0 video, homepage SSR/SEO/AEO, InteractiveAuto lifecycle, performance hardening, and regression QA.",
+  "description": "Build a production-quality homepage in a Blazor Web App around an immersive AI-generated scroll-scrubbed camera flight, including approval-gated ChatGPT/Codex stills, Wan 3.0 or fal.ai Kling v3 Pro video, homepage SSR/SEO/AEO, InteractiveAuto lifecycle, performance hardening, and regression QA.",
   "version": "2.0.0",
   "author": {
     "name": "PinguApps"
@@ -10,6 +10,8 @@
   "keywords": [
     "wan",
     "wan3",
+    "fal-ai",
+    "kling",
     "landing-page",
     "scroll",
     "video",

@@ -4,14 +4,19 @@
 - **Seam reads like rewind:** camera velocity reversed across the boundary. Use architecture A for grounded walkthroughs; every leg must finish and begin with the same gentle forward drift. Architecture B’s pull-out is suitable only when an aerial miniature hop is intentional.
 - **Frozen at frame zero:** hosting has no useful byte-range seekability. Keep the engine’s Blob fetch path.
 - **Huge clips:** all-intra encoding was used. Desktop GOP 8 is the baseline; native mobile GOP 4. Tighten only after measured decoder issues.
-- **Soft output:** source was downscaled/upscaled or over-compressed. Production must be
-  generated at Wan 3.0 `1080P`; encode at native resolution, about CRF 20, with restrained
-  sharpening. Never upscale a 720p draft into a production master.
+- **Soft output:** source was downscaled/upscaled or over-compressed. Wan production must be
+  generated at `1080P`. fal/Kling Pro exposes no resolution parameter, so verify the returned
+  source is 1080p. Encode at native resolution, about CRF 20, with restrained sharpening.
+  Never upscale a draft into a production master.
 - **White box around an island:** match the page background exactly. Use `knockout.py`
   only when the approved concept must be composited onto a portrait canvas; video and
   frame-0 posters remain full-frame.
 - **Concurrency rejection (`4007`, `50000`, `100101`):** re-check in-flight tasks and
   `taskQuota.video`; wait for an existing task rather than resubmitting or blaming credits.
+- **fal/Kling queue rejection or delay:** inspect the stored fal request ID and queue status.
+  Its default concurrency is one. Wait for the existing request rather than duplicating it.
+- **fal MCP authentication failure:** ensure the MCP process receives `FAL_KEY`, but never
+  print the key. Do not switch provider/model or install an SDK without approval.
 - **Ambiguous service response (`9001` or non-JSON):** inspect
   `wan task list --media-type video --output json` before retrying so a successful task is
   not duplicated.
@@ -30,11 +35,19 @@
 - **Phone freezes on fast flick:** confirm the native mobile file is actually selected, then measure. GOP 4/720-wide portrait plus seek coalescing is the baseline; GOP 2 is an evidence-based fallback.
 - **Mobile URL-bar jump:** do not relayout for touch height-only resize; relayout on width/orientation change.
 - **Portrait crop loses subject:** the user received desktop fallback or an explicitly approved crop, not a native portrait chain. Native 9:16 scenes need their own matching posters and every connector regenerated from portrait boundary frames.
-- **Mixed look at one seam:** the image source/style or video model changed mid-chain. Use
-  one non-Wan still path and the current top Wan video model throughout.
-- **Unexpected credit burn for silent footage:** confirm the request records `audio: false`.
-  Wan may retain an effectively silent AAC container track; measure it, reject audible
-  generated sound, and remove all audio with `-an` during delivery encoding.
+- **Mixed look at one seam:** the image source/style or video provider/model changed
+  mid-chain. Use one direct still path and the provider/model locked in the run manifest.
+- **Unexpected charge for silent footage:** confirm Wan records `audio: false` or fal/Kling
+  sends `generate_audio: false`. A provider may retain an effectively silent AAC container
+  track; measure it, reject audible generated sound, and remove all audio with `-an`.
+- **Kling camera barely moves:** remove slow/slow-motion language, append the required brisk
+  decisive-glide clause, and keep `static`, stalled/slow camera, and frozen action in the
+  negative prompt. Revise only after thumbs-down feedback.
+- **Kling introduces cutaways:** `multi_prompt` or shot-planning fields were sent, or the
+  prompt invited multiple shots. Use only `prompt`; omit `multi_prompt`, `shot_type`, and
+  `elements`, and keep cuts/cutaways/multi-shot in the negative prompt.
+- **Kling payload rejects resolution:** the Pro image-to-video endpoint has no resolution
+  field. Remove it, keep the Pro endpoint, and verify the returned dimensions instead.
 - **Rejected clip appears in the build:** an encode glob selected every revision. Encode
   from the approval ledger's exact filenames only; keep rejected candidates for audit.
 - **Rejected concept conditions a video:** a generation glob selected revisions instead of

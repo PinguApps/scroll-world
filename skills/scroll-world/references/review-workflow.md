@@ -2,9 +2,9 @@
 
 Every stochastic image and video candidate is a human review checkpoint—including brand,
 scene, social and portrait image generation. Generate images one at a time. Up to three
-independent Wan video candidates may run concurrently only after the user approves that
-batch's spend and only when `wan auth status --output json` reports enough available
-`taskQuota.video`; use the lower number. Never parallelize dependency-linked clips or
+independent video candidates may run concurrently only after the user authorizes that named
+batch and only within the selected provider's live/reported limit. Wan uses available
+`taskQuota.video`; fal/Kling defaults to one unless the account reports more. Never parallelize dependency-linked clips or
 competing revisions of one slot. Deterministic derivatives such as resizes, LQIPs and
 extracted frames do not need a new thumbs-up, but must be visually compared with their
 approved source. If any derivative will itself be used in a future prompt or generation
@@ -12,12 +12,15 @@ input, present it with the same thumbs-up/down gate first.
 
 ## Candidate cycle
 
-1. Generate one candidate per slot/revision. Name it by slot and revision, for example
-   `desktop-still-shop-r01.png`, `desktop-dive-shop-r01.mp4`, or
-   `mobile-connector-03-r02.mp4`. Never overwrite a prior candidate.
-2. Record model/modelVersion, resolution, duration, aspect ratio, audio setting, prompt,
-   input hashes, quality, Wan task ID, pre/post credit balance, measured deduction when
-   observable, output path, and creation time.
+1. Generate one candidate per slot/revision. Prefix scene media with its zero-padded order,
+   keep `_rNN` last, and name connectors with both endpoint orders, for example
+   `01_desktop-still-shop_r01.png`, `01_desktop-dive-shop_r01.mp4`, or
+   `01-02_mobile-connector-shop-to-market_r02.mp4`. Insert `_vNN` before `_rNN` for a
+   fan-out branch. Never overwrite a prior candidate.
+2. Record order, branch when applicable, provider, model/modelVersion or endpoint,
+   resolution when provider-controlled, returned dimensions, duration, aspect ratio, audio
+   setting, prompt, input hashes, quality, request/task ID, output path, and creation time.
+   Record billing data only when readily available.
    Mark fields that do not apply to a still as such.
 3. Present the actual full-resolution still in chat. For video, create a lightweight review
    proxy if the raw file is awkward to display, plus first, 25%, 50%, 75%, and final-frame
@@ -33,19 +36,19 @@ input, present it with the same thumbs-up/down gate first.
    frames, video, or review feedback be used in any future prompt or dependent generation.
 7. On rejection, preserve it and log the notes. If the feedback is precise and the
    revision stays within the already approved allowance, a thumbs-down authorizes one
-   revised candidate. Otherwise show the proposed prompt/input change and incremental
-   cost, then ask before spending.
+   revised candidate. Otherwise show the proposed prompt/input change and scope impact,
+   then ask before generating.
 8. Repeat until approved or the user explicitly abandons/substitutes that slot.
 
 Before asking, state any objective defect already found. Do not invite approval for a
-candidate known to violate the locked brief; still preserve it and obtain spend authority
+candidate known to violate the locked brief; still preserve it and obtain generation authority
 before a replacement when the existing allowance does not cover one.
 
 Maintain `review/approval-ledger.md` (or equivalent project artifact) with one row per
-image or video candidate: media type, slot, orientation, revision, job ID, settings,
-credits, status, feedback, and approved filename. Include rejected generations in final
-credit reporting. Treat `taskQuota.video` as available concurrency, never as credits or a
-daily generation allowance.
+image or video candidate: media type, order, slot, branch, orientation, revision, provider,
+model, request/job ID, settings, status, feedback, and approved filename. Include rejected
+generations in the final approximate spend summary. Treat Wan `taskQuota.video` as
+concurrency, never credits or a daily allowance.
 
 ## Dependency rules
 
@@ -56,14 +59,14 @@ An approval locks the exact pixels, not merely the prompt. After all stills are 
 approved, show a contact sheet containing only those approved files and request a separate
 world-level cohesion approval. If a still is reopened after video generation starts, every
 video directly or transitively conditioned by that still is potentially invalid; identify
-and cost affected regeneration before proceeding.
+the affected regeneration scope before proceeding.
 
 ### Architecture A — continuous legs
 
 Approve leg 1 before extracting its final frame and generating leg 2. The next leg starts
 only from the exact approved predecessor frame. If an earlier approved leg is later
 replaced, every downstream leg is invalid because its starting pixels changed. Explain
-the regeneration cost before reopening it.
+the regeneration scope before reopening it.
 
 ### Architecture B — dives and connectors
 
@@ -72,6 +75,14 @@ share an explicitly approved safe-concurrency batch. Lock that approved dive set
 creating connectors. Apply the same per-candidate review rule to independent connectors.
 Replacing a dive after connector work invalidates its adjacent connector(s); replacing a
 connector affects only that connector.
+
+### Optional fan-out branches
+
+Every branch still/video gets its own thumbs-up/down before it can condition that branch's
+next media. Branch approval means the candidate is viable for comparison; it does not select
+the branch for production. After presenting the viable first videos together, require one
+explicit winning branch. Mark the others inactive and exclude them from all future prompt,
+frame, contact-sheet, and manifest inputs unless the user explicitly reopens one.
 
 ### Draft to production
 
@@ -83,8 +94,8 @@ independently. Do not upscale a draft and call it the production master.
 
 Finish and lock desktop first. Then create the independent 9:16 chain with its own ledger
 entries and approvals. Desktop approval never carries over to portrait. An FFmpeg crop
-fallback spends no Wan credits, but still requires visual approval because it may lose the
-focal subject.
+fallback makes no provider generation request, but still requires visual approval because
+it may lose the focal subject.
 
 ## Review standards
 

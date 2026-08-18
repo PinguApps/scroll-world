@@ -10,7 +10,9 @@ across all scene stills — that identical text is what makes the world feel lik
 3. Scene-image prompts and review
 4. Architecture A leg prompts
 5. Architecture B dive/connector prompts
-6. Homepage copy fields
+6. Kling v3 Pro motion clause
+7. First-segment comparison fan-out
+8. Homepage copy fields
 
 ## Intake checklist (SKILL Phase 2)
 
@@ -27,21 +29,27 @@ Collect and write down:
   the fixed-angle clause below). **Always ask** and explain the feel/trade-off of each.
 - `MOBILE` — yes/no. **Always asked** (SKILL Phase 2), presented to the user
   with the ~2× credit cost stated.
-- `VIDEO_MODEL` — current top Wan model; presently Wan 3.0. Confirm the CLI default before
-  generation and never silently choose an older model.
-- `VIDEO_TIER` — Wan 3.0 `720P` draft/previz or `1080P` production. Draft and production
-  use the same top model; only resolution changes.
+- `VIDEO_PROVIDER` — `wan` or `fal.ai`. Ask unless the invocation already selected it.
+- `VIDEO_MODEL` — current top Wan model (presently Wan 3.0), or exactly
+  `fal-ai/kling-video/v3/pro/image-to-video`. Store provider/model in
+  `review/run-manifest.json` and never silently switch them during a run.
+- `VIDEO_TIER` — Wan uses `720P` draft/previz and `1080P` production with the same model.
+  fal/Kling Pro exposes no resolution parameter: use the same Pro endpoint, verify returned
+  dimensions, and never substitute Standard or upscale a lower result.
 - `GENERATE_AUDIO` — no. The site is muted and native audio materially increases cost.
-- `STILLS_SOURCE` — direct ChatGPT/Codex image generation. Never use a Wan image command.
+- `STILLS_SOURCE` — direct ChatGPT/Codex image generation. Never use a video-provider image command.
   Use one approved image model/style path throughout; if the direct tool is unavailable,
-  ask the user for supplied images or approval for another non-Wan source.
-- `MOBILE=yes` means the **native 9:16 portrait chain** (pipeline §8):
+  ask the user for supplied images or approval for another image source.
+- `MOBILE=yes` means the **native 9:16 portrait chain** (pipeline §9):
   portrait renders of every dive/connector + `clipMobile`/`connectorsMobile`/`stillMobile`
-  wiring + the full mobile QA. The approved crop fallback in pipeline §8 is a no-credits
-  stopgap only.
+  wiring + the full mobile QA. The approved crop fallback in pipeline §9 makes no provider
+  generation request and is a stopgap only.
 - `REVISION_ALLOWANCE` — normally 25–50% beyond the accepted-clip base count for
-  production, increased for ambitious motion. This is budget headroom, never permission
+  production, increased for ambitious motion. This is scope headroom, never permission
   to auto-reroll: every still and video candidate goes through `review-workflow.md`.
+- `FAN_OUT` — optional named first-segment branches when the user wants to compare major
+  directions. Record each branch's still/prompt/video independently and lock one winner
+  before continuing the journey.
 
 ## Style preamble (default: clay diorama)
 
@@ -78,7 +86,7 @@ Tips:
 - **Compose for the centre.** The page renders every clip `object-fit:cover`. Keep the
   focal subject horizontally centred with a little headroom, and don't park anything
   essential at the far left/right edges. Mobile ships its own native 9:16 chain
-  (pipeline §8), so this is not about surviving a crop — but a centred composition makes
+  (pipeline §9), so this is not about surviving a crop — but a centred composition makes
   the portrait renders open cleanly from the same still, and it keeps the dive's focal
   point where the camera actually flies.
 - Use 3:2 for a floating-island concept that may be recomposed; use 16:9 for full-bleed
@@ -86,7 +94,7 @@ Tips:
   Request the direct image tool's high-quality output; retain the exact original pixels.
 
 Generate one still candidate only, present the actual image with prompt/model/dimensions/
-quality/cost, and wait for explicit thumbs-up or thumbs-down. Preserve rejected revisions.
+quality, and wait for explicit thumbs-up or thumbs-down. Preserve rejected revisions.
 Only approved stills may condition video. After every scene still is individually approved,
 present an approved-files-only contact sheet and wait for separate cohesion approval before
 generating video.
@@ -97,9 +105,9 @@ generating video.
 **No `--last-frame`.** The bolded clauses are the motion-handoff contract — keep them
 verbatim; the mid-leg move is where the expression goes.
 
-Wan 3.0 `frame2video` receives the exact previous frame through `--first-frame`. Keep the
-approved scene concept, shared style preamble, palette, props, and destination explicit in
-the prompt; never replace the previous rendered boundary with a concept still.
+The locked provider receives the exact previous frame as its start frame. Keep the approved
+scene concept, shared style preamble, palette, props, and destination explicit in the prompt;
+never replace the previous rendered boundary with a concept still.
 
 ```
 Single continuous cinematic camera move, no cuts. **Continue the same slow, steady
@@ -158,13 +166,13 @@ subtle parallax. No text, no captions.
 For scenes with no building to open (a field, a plaza, a road), replace the roof clause
 with "the camera flies low across [the scene] toward [focal point]."
 
-Generate dives only within the independently approved Wan batch/concurrency rules; review
+Generate dives only within the independently approved provider batch/concurrency rules; review
 each candidate separately. Lock the approved dive set before any connector generation.
 
-WAN command shape: `wan frame2video --first-frame <approved-frame> --prompt <prompt>
---resolution <720P|1080P> --duration 8 --audio-output=false --output json`. Use `720P`
-for draft validation and `1080P` for production. Do not pass a fixed `--ratio` with Wan 3.0
-frame-to-video; its adaptive ratio follows the approved 16:9 or 9:16 input frame.
+Submit through the locked adapter in `video-providers.md`. Use the approved start frame,
+`prompt`, an 8-second starting duration, and generated audio off. Wan uses `720P` for draft
+or `1080P` for production. fal/Kling accepts no resolution field and must use `prompt`, never
+`multi_prompt`.
 
 ## Connector clip prompt (SKILL Phase 4)
 
@@ -183,13 +191,40 @@ For the last connector into a hero-product finale: "…glides forward and the wo
 dissolves toward a single giant [PRODUCT] floating in soft [BG] space, arriving in front
 of it."
 
-WAN command shape: `wan frame2video --first-frame <approved-start> --last-frame
-<approved-end> --prompt <prompt> --resolution <720P|1080P> --duration 5
---audio-output=false --output json`. Both endpoints must share the intended aspect ratio.
+Submit through the locked adapter in `video-providers.md` with the approved start/end frames,
+`prompt`, a 5-second starting duration, and generated audio off. Both endpoints must share
+the intended aspect ratio. For fal/Kling, use `end_image_url` and never `multi_prompt`.
 
-Generate connectors only within the independently approved Wan batch/concurrency rules.
+Generate connectors only within the independently approved provider batch/concurrency rules.
 Review each separately and show both required seam frames beside its candidate boundary
 frames; technical frame matching does not replace human approval of the motion between them.
+
+## Kling v3 Pro motion clause
+
+For the fal/Kling adapter, remove contradictory “slow motion” or barely-moving camera
+language from the chosen template and append this to every video prompt:
+
+```
+The camera glides decisively at a brisk, clearly perceptible pace from the first second,
+covering substantial visible distance throughout the shot. Maintain smooth cinematic
+acceleration and continuous motion; never hover, stall, crawl, or move imperceptibly.
+```
+
+Keep subject motion readable and natural. Put `static`, frozen/stalled motion, slow camera,
+cuts/cutaways, flicker, artifacts, text, and logos in the adapter's negative prompt. Use the
+single `prompt` field only; `multi_prompt` is forbidden because it creates shot cutaways.
+
+## First-segment comparison fan-out
+
+When the user requests alternative directions, create named branches such as `v01` clay,
+`v02` photoreal, and `v03` locked-isometric. If visual direction changes, generate and
+approval-gate a separate start still for each branch before its video. If only camera motion
+changes, branches may share one approved start still.
+
+Present every candidate independently, then present the approved trial videos together for
+one explicit branch choice. Persist the winning provider/model, style preamble, camera clause,
+prompt, and exact start media. Preserve but quarantine non-winning branches; never draw prompt
+details, frames, or feedback from them unless the user explicitly reopens that branch.
 
 ## Copy per section (for the engine config)
 

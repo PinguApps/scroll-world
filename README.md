@@ -54,13 +54,14 @@ does not take ownership of site-wide SEO/AEO, robots, sitemap, or supporting-pag
 ## Requirements
 
 - A Blazor Web App targeting a currently supported .NET version.
-- Current authenticated [`wan` CLI](https://www.npmjs.com/package/@wan-ai/cli) with an
-  eligible Wan membership and sufficient credits.
+- One video provider: either the current authenticated
+  [`wan` CLI](https://www.npmjs.com/package/@wan-ai/cli), or an authenticated fal.ai MCP
+  connection for `fal-ai/kling-video/v3/pro/image-to-video`.
 - `ffmpeg` and `ffprobe`.
 - PowerShell 7 on Windows, or Bash 3.2+ with `jq` on Unix-like systems.
 - Python 3 + Pillow when background knockout or local LQIP tooling requires it.
-- Direct ChatGPT/Codex image generation for stills. Wan image commands are intentionally
-  excluded from this skill.
+- Direct ChatGPT/Codex image generation for stills. Video-provider image commands are
+  intentionally excluded from this skill.
 
 The skill audits these requirements but does not install tools, authenticate, switch workspaces, or spend credits without approval.
 
@@ -68,13 +69,18 @@ The skill audits these requirements but does not install tools, authenticate, sw
 
 Every run explicitly chooses:
 
-- The current top Wan video model (Wan 3.0 today) for the complete chain.
-- 720p for tests/previz and 1080p for production renders, always with generated audio off.
+- One locked provider/model for the complete run: the current top Wan model (Wan 3.0 today),
+  or fal.ai Kling Video v3 Pro.
+- Wan uses 720p for tests and 1080p for production. Kling Pro exposes no resolution input,
+  so returned dimensions are verified and a production source must be 1080p. Generated
+  audio is always off.
 - Desktop only or a separate native 9:16 mobile chain. Native mobile roughly doubles video
   generation and can require separate portrait stills; a crop is never silently labelled
   mobile-optimised.
 - Fly-through dives/connectors, a continuous forward walkthrough, or a locked isometric glide.
-- Direct ChatGPT/Codex image generation for all stills in the chain, never Wan.
+- Direct ChatGPT/Codex image generation for all stills in the chain, never the video provider.
+- Optional first-segment fan-out for comparing named visual/camera directions before one
+  branch is selected for the remaining chain.
 
 The seam rule is strict: neighbouring clips share actual rendered boundary frames. Scroll scrubs the resulting video; it does not render 3D in the browser.
 
@@ -83,7 +89,8 @@ social/brand images, dives, legs, and connectors. The skill shows the candidate 
 prompt/settings/task details and waits for a thumbs-up or thumbs-down with feedback.
 Rejected revisions are preserved and logged. Only approved stills may condition video, and
 only an explicitly approved clip can unlock dependent generation. Up to three independent
-Wan videos may run concurrently when the live quota and approved spend allow it.
+videos may run concurrently when the selected provider allows it; fal/Kling defaults to one.
+Scene assets use ordered prefixes such as `01_`, while revisions retain `_r01` suffixes.
 
 ## Proven interaction defaults
 
@@ -114,6 +121,7 @@ skills/scroll-world/
 └── references/
     ├── prompts.md
     ├── pipeline.md
+    ├── video-providers.md
     ├── scrub-engine.js
     ├── blazor-integration.md
     ├── homepage-foundation.md
@@ -125,9 +133,10 @@ skills/scroll-world/
 
 Generated media is project-specific and is not stored in this repository.
 
-The skill re-checks the installed WAN CLI before each build, uses Wan 3.0 first/last-frame
-conditioning, passes local frames directly for CLI-managed upload, respects the account's
-live video concurrency, and records task IDs and credit changes. Images remain outside Wan.
+The skill locks one video provider per run. Wan uses CLI-managed first/last-frame uploads and
+resumable task IDs that may remain active for hours. fal uses its MCP queue with Kling v3 Pro,
+a single prompt, optional end frame, audio disabled, and a faster-glide prompt contract.
+Images remain outside both video providers.
 
 ## License
 

@@ -35,6 +35,7 @@ test("all routed resources and templates exist", async () => {
   for (const path of [
     "references/prompts.md",
     "references/pipeline.md",
+    "references/video-providers.md",
     "references/scrub-engine.js",
     "references/blazor-integration.md",
     "references/homepage-foundation.md",
@@ -176,6 +177,7 @@ test("supporting routes are optional minimal placeholders, not full pages", asyn
 
 test("image and video generation are approval-gated and quota-safe", async () => {
   const pipeline = await read("references/pipeline.md");
+  const providers = await read("references/video-providers.md");
   const review = await read("references/review-workflow.md");
   assert.match(skillSource, /Generate one image candidate at a time/);
   assert.match(skillSource, /at most three independent video/);
@@ -183,18 +185,20 @@ test("image and video generation are approval-gated and quota-safe", async () =>
   assert.match(skillSource, /Only an approved still may condition a video/);
   assert.match(skillSource, /Approval never transfers to a stochastic re-render/);
   assert.match(pipeline, /Do not pass paths\s+between shells/);
-  assert.match(pipeline, /ConvertFrom-Json/);
-  assert.match(pipeline, /wan frame2video/);
-  assert.match(pipeline, /--first-frame/);
-  assert.match(pipeline, /--last-frame/);
-  assert.match(pipeline, /--audio-output=false/);
-  assert.match(pipeline, /--resolution 720P/);
-  assert.match(pipeline, /Use `1080P` for every production render/);
+  assert.match(providers, /wan frame2video/);
+  assert.match(providers, /--first-frame/);
+  assert.match(providers, /--last-frame/);
+  assert.match(providers, /--audio-output=false/);
+  assert.match(providers, /<720P\|1080P>/);
+  assert.match(pipeline, /Production sources\s+must be 1080p/);
   assert.match(pipeline, /contact sheet/);
   assert.match(pipeline, /Concept images are conditioning inputs, not public posters/);
   assert.match(pipeline, /-sseof -1 -i \$candidateVideo -vf reverse -frames:v 1/);
   assert.match(pipeline, /exact frame\s+0 of its approved section video/);
-  assert.match(pipeline, /min\(3, live taskQuota\.video\)/);
+  assert.match(pipeline, /Never have more than three skill-created video tasks/);
+  assert.match(pipeline, /01_desktop-still-farm_r01\.png/);
+  assert.match(pipeline, /01-02_desktop-connector-farm-to-shop_r01\.mp4/);
+  assert.match(pipeline, /_vNN_rNN/);
   assert.match(review, /Silence, elapsed time, or a technically valid render is never approval/);
   assert.match(review, /approval-ledger\.md/);
   assert.match(review, /Generate and approve every still individually/);
@@ -204,6 +208,7 @@ test("image and video generation are approval-gated and quota-safe", async () =>
   assert.match(review, /every downstream leg is invalid/);
   assert.match(review, /Desktop approval never carries over to\s+portrait/);
   assert.match(review, /used in any future prompt or dependent generation/);
+  assert.match(review, /require one\s+explicit winning branch/);
 });
 
 test("homepage scope includes accessibility and a bounded compliance contract", async () => {
@@ -218,25 +223,42 @@ test("homepage scope includes accessibility and a bounded compliance contract", 
 });
 
 test("quality choices cover live production resolution paths", () => {
-  assert.match(skillSource, /Wan 3\.0, `720P`, generated audio off/);
-  assert.match(skillSource, /Wan 3\.0, `1080P`, generated audio off/);
-  assert.match(skillSource, /top Wan video model/);
-  assert.match(skillSource, /--audio-output=false/);
-  assert.match(skillSource, /Never call `wan text2image`/);
+  assert.match(skillSource, /Current top model, `720P`, generated audio off/);
+  assert.match(skillSource, /Same model, `1080P`, generated audio off/);
+  assert.match(skillSource, /fal-ai\/kling-video\/v3\/pro\/image-to-video/);
+  assert.match(skillSource, /no resolution field exists/);
+  assert.match(skillSource, /Always disable audio/);
+  assert.match(skillSource, /Never call a video provider's image/);
   assert.match(skillSource, /direct ChatGPT\/Codex image-generation tool/);
 });
 
-test("camera and Wan guidance survives the Blazor-first merge", async () => {
+test("Wan and fal Kling provider contracts survive the Blazor-first merge", async () => {
   const pipeline = await read("references/pipeline.md");
   const prompts = await read("references/prompts.md");
+  const providers = await read("references/video-providers.md");
 
   assert.match(skillSource, /Camera style, always ask/);
   assert.match(prompts, /locked-iso/);
-  assert.match(skillSource, /Use `wan frame2video` for every generated clip/);
-  assert.match(pipeline, /modelVersion: "3_0"/);
-  assert.match(pipeline, /tailImage/);
+  assert.match(skillSource, /review\/run-manifest\.json/);
+  assert.match(providers, /modelVersion: "3_0"/);
+  assert.match(providers, /tailImage/);
   assert.match(pipeline, /taskQuota\.video/);
-  assert.match(pipeline, /wan credits --output json/);
-  assert.match(pipeline, /Do not select an older model for drafts/);
+  assert.match(providers, /wan credits --output json/);
+  assert.match(providers, /may legitimately take several hours/);
+  assert.match(providers, /normally take a few\s+minutes/);
+  assert.match(providers, /Use `prompt`; never send `multi_prompt`/);
+  assert.match(providers, /"generate_audio": false/);
+  assert.match(providers, /"end_image_url"/);
+  assert.match(providers, /static, motionless action/);
+  assert.match(providers, /glides decisively at a brisk/);
+  assert.match(providers, /submit_job/);
+  assert.match(providers, /check_job/);
+  assert.match(providers, /get_job_result/);
+  assert.match(providers, /get_model_schema/);
+  assert.match(providers, /get_pricing/);
+  assert.match(providers, /upload_file\.file_path` cannot read the local machine/);
+  assert.match(providers, /Authorization: Key \$FAL_KEY/);
+  assert.doesNotMatch(providers, /published audio-off rate is/);
+  assert.match(providers, /After the first representative video/);
   assert.match(skillSource, /Judge composition and props, not\s+raw PSNR/);
 });
