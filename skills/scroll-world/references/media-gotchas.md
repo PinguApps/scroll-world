@@ -57,3 +57,14 @@
   poster. Rebuild the poster from exact frame 0 of the approved section video and use its
   real intrinsic dimensions. Native mobile needs its own portrait frame-0 source in the
   SSR `<picture>`.
+- **A glyph/anatomy defect survives every video revision:** it was already baked into the
+  conditioning still or boundary. Reject or clean that input at full resolution; prompting
+  is not a reliable pixel-removal tool, and every downstream dependent clip is invalid.
+- **A moving subject freezes, vanishes, collides, or loses anatomy:** contact-sheet frames
+  hid a temporal failure. Review the complete proxy at normal speed (and reverse when scroll
+  can reverse), inspect the affected native-resolution crop, then revise the motion timing
+  or source composition so paths do not intersect.
+- **A fal/Kling result disappears after completion:** provider result URLs and queue records
+  were treated as storage. Fetch and validate locally immediately after `COMPLETED`. If an
+  account lock blocks retrieval, preserve the existing IDs/URLs and retry that result once
+  after unlock; resubmit only after a definitive `404`/`NOT_FOUND` is recorded.

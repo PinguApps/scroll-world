@@ -24,7 +24,10 @@ input, present it with the same thumbs-up/down gate first.
    Mark fields that do not apply to a still as such.
 3. Present the actual full-resolution still in chat. For video, create a lightweight review
    proxy if the raw file is awkward to display, plus first, 25%, 50%, 75%, and final-frame
-   stills. For seams, also show the required endpoint beside the candidate endpoint.
+   stills. Play the complete proxy at normal speed; contact sheets do not prove temporal
+   quality. For reversible scroll motion, also inspect reverse playback. Show native-resolution
+   crops of high-risk regions and the final boundary. For seams, show the required endpoint
+   beside the candidate endpoint.
 4. Ask for:
    - 👍 Approve.
    - 👎 Reject, followed by what is wrong.
@@ -44,7 +47,7 @@ Before asking, state any objective defect already found. Do not invite approval 
 candidate known to violate the locked brief; still preserve it and obtain generation authority
 before a replacement when the existing allowance does not cover one.
 
-Maintain `review/approval-ledger.md` (or equivalent project artifact) with one row per
+Maintain `.scroll-world/review/approval-ledger.md` (or equivalent project artifact) with one row per
 image or video candidate: media type, order, slot, branch, orientation, revision, provider,
 model, request/job ID, settings, status, feedback, and approved filename. Include rejected
 generations in the final approximate spend summary. Treat Wan `taskQuota.video` as
@@ -109,8 +112,14 @@ Approve only when:
   reduced-motion fallback.
 - There is no rapid flashing, unsafe flicker, or unintended generated audio.
 - The intended subject/action is readable throughout.
+- No person, vehicle, prop, or other subject appears or disappears unexpectedly.
+- Once a visible subject starts moving, it continues coherently or stops for an explicit,
+  visible reason; it does not freeze mid-action, collide implausibly, or pop through an
+  occluder. People retain complete, plausible anatomy throughout.
 - Camera velocity and direction satisfy the handoff contract.
 - No unwanted text, logos, anatomy/geometry failures, flicker, or style drift remain.
+- Every generated light/effect line has a visible source, stays on its intended surface,
+  and does not become an unexplained beam through the sky or environment.
 - The final frame is usable for the next dependency.
 - Architecture B connectors match both boundary frames and read naturally in both scroll
   directions.

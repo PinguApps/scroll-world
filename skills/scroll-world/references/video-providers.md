@@ -1,7 +1,7 @@
 # Video provider adapters
 
 Keep orchestration, approval, naming, and Blazor delivery provider-neutral. Lock exactly one
-adapter in `review/run-manifest.json` before the first video and use it for the complete run.
+adapter in `.scroll-world/review/run-manifest.json` before the first video and use it for the complete run.
 
 ## Contents
 
@@ -178,9 +178,10 @@ than Kling's usual default.
 
 Store `request_id`, `status_url`, `response_url`, and `cancel_url` immediately. Poll with
 `check_job`, preferring the canonical `status_url`. After it reports `COMPLETED`, call
-`get_job_result`, preferring the canonical `response_url`. Never call `submit_job` again for
-the same request. Download `video.url` to the candidate-specific path and validate it with
-`ffprobe`. fal's published endpoint default is one concurrent request per user; use one
+`get_job_result`, preferring the canonical `response_url`, immediately; result URLs and
+queue records are not durable storage. Never call `submit_job` again for the same request.
+Download `video.url` to the candidate-specific local path immediately and validate it with
+`ffprobe` before doing unrelated work. fal's published endpoint default is one concurrent request per user; use one
 unless the live MCP/account explicitly reports a higher limit, and never exceed this skill's
 cap of three. Call `cancel_job` only when the user explicitly asks to cancel that request.
 
@@ -193,12 +194,18 @@ minutes. If it remains queued/running beyond 15 minutes, inspect its existing st
 report the delay; do not abandon or duplicate it. Fetch the result only after completion.
 
 For Wan, expect hours and use the persisted-task workflow above. A new session must read
-`review/run-manifest.json` and `review/approval-ledger.md`, then resume exact task IDs rather
+`.scroll-world/review/run-manifest.json` and `.scroll-world/review/approval-ledger.md`, then resume exact task IDs rather
 than rediscovering candidates with globs.
 
 For either provider, preserve failed submissions and payloads. Correct authentication,
 content-safety, input, or rate-limit problems without changing provider/model. Before retrying
 an ambiguous submission, prove that no request/task ID was created.
+
+If a billing/account lock blocks result retrieval, persist the exact error, status, request
+ID, and status/result URLs. Do not resubmit while the existing result is ambiguous. After
+the account is unlocked, try the stored result URL once. If it returns a definitive
+`404`/`NOT_FOUND`, record that the provider purged or lost the result; only then create a new
+revision under the existing authorization and allowance, or ask if it exceeds them.
 
 ## 5. One-time remaining-work estimate
 

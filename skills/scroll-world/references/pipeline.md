@@ -28,7 +28,7 @@ ffprobe -version
 ```
 
 Ask for or read the user's provider/model choice and immediately write
-`review/run-manifest.json`. Then run only that adapter's preflight from
+`.scroll-world/review/run-manifest.json`. Then run only that adapter's preflight from
 `video-providers.md`. Stop if authentication or model access is invalid. Summarize only the
 necessary account/authentication state and live concurrency; never expose credentials or
 unrelated profile data.
@@ -57,8 +57,12 @@ for a frame-locked chain because section timing must remain predictable.
 
 ## 2. Candidate naming and approval ledger
 
-Create project-local `review/` and scratch/output directories. Prefix scene media with its
-two-digit narrative order and retain `_rNN` as the final stem suffix:
+Create a project-local `.scroll-world/` working root. Keep prompts, manifests, approval
+ledgers, candidates, raw masters, proxies, contact sheets, extracted boundaries, and all
+other intermediate media beneath it. Ensure that root is ignored by version control and
+keep it out of the app's published assets. Only after approval and encoding, copy the exact
+web-consumed files into the project's configured final delivery/output location. Prefix
+scene media with its two-digit narrative order and retain `_rNN` as the final stem suffix:
 
 ```text
 01_desktop-still-farm_r01.png
@@ -74,7 +78,7 @@ delivery assets. Name a connector with both endpoint ordinals (`01-02_`). Insert
 fan-out variant `_vNN` immediately before `_rNN`. Zero-pad order and revision to at least two
 digits. Never overwrite a candidate or use a glob to infer order/approval.
 
-Maintain `review/approval-ledger.md`. Record order, slot, optional branch, orientation,
+Maintain `.scroll-world/review/approval-ledger.md`. Record order, slot, optional branch, orientation,
 revision, prompt path, input SHA-256 hashes, provider, model/endpoint, resolution when
 provider-controlled, returned dimensions, duration, audio setting, request/task ID, saved
 raw path, review status, feedback, and approved path. Record measured billing data only when
@@ -109,6 +113,20 @@ and ask the user to supply images or approve another image source.
 Concept images are conditioning inputs, not public posters. Public posters come from exact
 frame 0 of approved videos.
 
+### Conditioning-frame hazard gate
+
+Before any approved still or extracted boundary frame is uploaded to a video provider:
+
+1. Inspect the original at full resolution, not only a chat preview or contact sheet.
+2. Inspect native-resolution crops around awnings/canopies, signs, doors/plaques, number
+   plates, screens/UI, tiny people, vehicles, posts, wires, and other thin props.
+3. Reject or clean any unwanted glyph, malformed anatomy, disappearing object, stray line,
+   or topology defect before submission.
+4. Record the inspected input hash in the approval ledger.
+
+Prompts rarely remove defects already present in conditioning pixels. Treat every such
+defect as chain-blocking: a contaminated start or boundary frame must not condition video.
+
 ## 4. Provider submission and result handling
 
 Create a candidate-specific directory and prompt file. Submit with the exact locked adapter
@@ -118,6 +136,12 @@ request/task ID, provider/model, input hashes, and target candidate path immedia
 Wan tasks may take several hours and must remain resumable from the stored task ID. fal/Kling
 normally finishes in minutes, so wait through its queue/status flow and keep the user updated.
 Neither elapsed time nor a transient status authorizes duplicate submission.
+
+Provider queue records and result URLs are not durable storage. As soon as a job reports
+completion, fetch its result, download it into `.scroll-world/`, and validate the local file
+before doing unrelated work. Preserve the request/task ID and all status/result URLs even
+after download; follow the provider-specific ambiguous-result recovery contract rather than
+resubmitting.
 
 After download, verify the exact candidate:
 
@@ -208,7 +232,7 @@ connector(s).
 ## 7. Optional first-segment fan-out
 
 Fan out only when the user asks to compare named directions or variations. Record every
-branch in `review/run-manifest.json` with `branchId`, concept, provider/model, prompt path,
+branch in `.scroll-world/review/run-manifest.json` with `branchId`, concept, provider/model, prompt path,
 input path/hash, status, and candidate paths.
 
 - If art direction/composition differs, create and approve a separate start still for each

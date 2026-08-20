@@ -23,6 +23,11 @@ Collect and write down:
 - `PALETTE` — 4–6 named hexes, e.g. `taro #9B7EBD, cream #F5EDE0, caramel #C88A5A, matcha #8FB98A, plum #3A2E48`. Pick ONE as the scene **background** colour (usually the lightest) and one as the primary **accent**.
 - `TONE` — a word or two (cozy/premium, playful, industrial…).
 - `STYLE` — the art direction (default below).
+- `WORLD_TOPOLOGY` — `floating-island` or `connected/full-bleed`. Lock this explicitly.
+  Do not default a named real location to a detached island.
+- `LOCALITY` — architecture, road/ground materials, vegetation, weather/light, coastline or
+  topography, and other cues that make a named place read correctly. Use brand colours as
+  accents when applying them to roads, water, or terrain would change the geographic reading.
 - `SECTIONS[]` — ordered list; for each: `id`, `label`, `subject` (what's in the diorama), `eyebrow`, `title`, `body` (≤ 1 sentence), `tags[]` (0–3). Last section = hero product + CTA.
 - `CAMERA` — fly-through (architecture B: dives plus aerial hops) | walkthrough
   (architecture A: expressive, always-forward legs) | locked-iso (architecture A plus
@@ -32,7 +37,7 @@ Collect and write down:
 - `VIDEO_PROVIDER` — `wan` or `fal.ai`. Ask unless the invocation already selected it.
 - `VIDEO_MODEL` — current top Wan model (presently Wan 3.0), or exactly
   `fal-ai/kling-video/v3/pro/image-to-video`. Store provider/model in
-  `review/run-manifest.json` and never silently switch them during a run.
+  `.scroll-world/review/run-manifest.json` and never silently switch them during a run.
 - `VIDEO_TIER` — Wan uses `720P` draft/previz and `1080P` production with the same model.
   fal/Kling Pro exposes no resolution parameter: use the same Pro endpoint, verify returned
   dimensions, and never substitute Standard or upscale a lower result.
@@ -44,24 +49,38 @@ Collect and write down:
   portrait renders of every dive/connector + `clipMobile`/`connectorsMobile`/`stillMobile`
   wiring + the full mobile QA. The approved crop fallback in pipeline §9 makes no provider
   generation request and is a stopgap only.
-- `REVISION_ALLOWANCE` — normally 25–50% beyond the accepted-clip base count for
-  production, increased for ambitious motion. This is scope headroom, never permission
-  to auto-reroll: every still and video candidate goes through `review-workflow.md`.
+- `REVISION_ALLOWANCE` — 25–50% beyond the accepted-media base for simple empty scenes
+  with modest motion. Use 50–100%+ when the brief includes strict no-text/glyph constraints,
+  moving people or vehicles, literal UI/screens, exact named geography/topology, dependent
+  architecture-A legs, native portrait, or complex transformations. The first boundary leg
+  may need extra headroom because its defects propagate. This is scope headroom, never
+  permission to auto-reroll: every still and video candidate goes through `review-workflow.md`.
 - `FAN_OUT` — optional named first-segment branches when the user wants to compare major
   directions. Record each branch's still/prompt/video independently and lock one winner
   before continuing the journey.
 
 ## Style preamble (default: clay diorama)
 
-Reuse verbatim in every scene prompt. Swap the bracketed bits for the brand's palette/bg.
+Reuse verbatim in every scene prompt. Swap the bracketed bits for the locked topology,
+locality, and brand palette.
 
 ```
-Isometric low-poly 3D diorama floating as a small rounded island on a plain solid
-[BG_HEX] background with a soft contact shadow beneath it. Soft matte clay 3D render,
+Isometric low-poly 3D diorama. [WORLD_TOPOLOGY CLAUSE] [LOCALITY CLAUSE].
+Soft matte clay 3D render,
 rounded toy-model shapes, gentle warm studio lighting, soft long shadows, tilt-shift
 miniature look. Cohesive color palette of [PALETTE]. Highly detailed, centered
 composition, absolutely no text, no letters, no numbers, no logos.
 ```
+
+Topology clauses:
+
+- **Floating island:** “The scene floats as a small rounded island on a plain solid
+  [BG_HEX] background with a soft contact shadow beneath it.”
+- **Connected/full-bleed:** “Continuous terrain and neighbourhood extend through every
+  frame edge; this is part of a larger connected world, never a detached or floating island.”
+
+Keep the locality clause byte-identical across scenes. It should name only stable visual
+cues from the locked brief, not stereotypes or invented landmarks.
 
 Alternate directions (swap the first two sentences, keep the palette/no-text tail):
 - **Flat papercraft:** "Isometric layered paper-craft diorama, matte cardstock, clean die-cut edges, subtle drop shadows between layers."
@@ -89,7 +108,7 @@ Tips:
   (pipeline §9), so this is not about surviving a crop — but a centred composition makes
   the portrait renders open cleanly from the same still, and it keeps the dive's focal
   point where the camera actually flies.
-- Use 3:2 for a floating-island concept that may be recomposed; use 16:9 for full-bleed
+- Use 3:2 for an explicitly approved floating-island concept that may be recomposed; use 16:9 for full-bleed
   desktop art. Native full-bleed mobile uses a separately generated 9:16 composition.
   Request the direct image tool's high-quality output; retain the exact original pixels.
 
@@ -110,11 +129,11 @@ scene concept, shared style preamble, palette, props, and destination explicit i
 never replace the previous rendered boundary with a concept still.
 
 ```
-Single continuous cinematic camera move, no cuts. **Continue the same slow, steady
-forward glide.** [MID-LEG MOVE — optional, from the library below.] The camera moves
-into [SCENE i] toward [FOCAL POINT]. **In the final second, settle back into a slow,
-steady forward glide toward [the doorway / opening / direction of the next scene].**
-[STYLE tail + PALETTE]. Smooth, graceful, slow motion, subtle parallax. No text, no captions.
+Single continuous cinematic camera move, no cuts. **Continue the same steady forward
+glide.** [MID-LEG MOVE — optional, from the library below.] The camera moves into
+[SCENE i] toward [FOCAL POINT]. **In the final second, settle into a steady forward
+glide toward [the doorway / opening / direction of the next scene].**
+[STYLE tail + PALETTE]. Smooth continuous motion, subtle parallax. No text, no captions.
 ```
 
 For `CAMERA = locked-iso`, omit the mid-leg move and include this clause in every leg:
@@ -132,7 +151,7 @@ rotates materially before allowing its final frame to condition the next leg.
 Reversals are safe *inside* a leg (it's one continuous render) — only a seam may never
 reverse. That's why "ease back out" is fine mid-leg.
 
-- **Half-orbit** (product, luxury): "sweeping in a slow half-orbit around [the hero
+- **Half-orbit** (product, luxury): "sweeping in a smooth half-orbit around [the hero
   object], keeping it centered, then continuing past it"
 - **Crane-up reveal** (scale, atriums, campuses): "rising smoothly as the full scale of
   [the space] reveals below"
@@ -155,11 +174,11 @@ next leg.
 
 ```
 Single continuous cinematic camera move, no cuts. Begin high and far, looking down at the
-whole [SECTION.subject] from outside like a tiny model. The camera slowly glides forward
+whole [SECTION.subject] from outside like a tiny model. The camera glides forward
 and descends toward it, sweeping in toward [FOCAL POINT — the counter/the cauldrons/the
 people], as if flying inside. As the camera pushes in, the roof and upper structure
 gently lift and open away to reveal the warm interior. [STYLE tail: soft matte clay
-diorama, tilt-shift miniature, warm light, [PALETTE]]. Smooth, graceful, slow motion,
+diorama, tilt-shift miniature, warm light, [PALETTE]]. Smooth continuous motion,
 subtle parallax. No text, no captions.
 ```
 
@@ -184,7 +203,7 @@ Single continuous cinematic camera move, no cuts. The camera smoothly pulls up a
 out of [SCENE i], rising into the sky, then glides forward across the connected miniature
 world and arrives above [SCENE i+1], beginning to descend toward it. One connected
 miniature clay world, seamless flowing aerial transition. [STYLE tail + PALETTE]. Smooth
-graceful slow motion. No text, no captions.
+continuous motion. No text, no captions.
 ```
 
 For the last connector into a hero-product finale: "…glides forward and the world

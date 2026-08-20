@@ -58,6 +58,16 @@ rather than treating one Chromium run as cross-browser proof.
 
 Test reduced motion: no video network requests, stills remain meaningful, particles and wheel animation are absent.
 
+## Generated-media temporal QA
+
+For every candidate, play the complete proxy at normal speed; a contact sheet alone is
+insufficient. For scroll-reversible footage, inspect reverse playback too. At native
+resolution, crop and inspect all high-risk people, vehicles, signs/canopies, screens, thin
+props, generated light lines, and the final dependency frame. Verify that subjects do not
+appear, disappear, lose anatomy, freeze after beginning to move, collide implausibly, or pop
+through occluders. Verify that every effect line has a visible source and remains attached
+to its intended surface.
+
 ## Performance/network assertions
 
 Record rather than eyeball:

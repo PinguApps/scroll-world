@@ -86,7 +86,13 @@ Ask only decisions that change the result. Group questions into short rounds.
 
 1. Subject, audience, location/service area, offers, proof, objections, CTA, contact details, and one-sentence commercial goal.
 2. Brand source: import from an existing site, supplied kit, or propose a full identity for approval. Capture name, voice, typography direction, and 4–6 named colours.
-3. Art direction and ordered journey. Propose 5–7 scenes derived from the customer journey or value chain. Every scene needs subject, eyebrow, headline, body, up to three tags, service link if relevant, and intended focal moment.
+3. Art direction, world topology/locality, and ordered journey. Explicitly lock whether the
+   world is a detached miniature island or connected/full-bleed terrain. For a named real
+   place, capture the architecture, road/ground materials, vegetation, weather/light, and
+   topography that make it read correctly; brand colours are accents when recolouring the
+   environment would change that geographic reading. Propose 5–7 scenes derived from the
+   customer journey or value chain. Every scene needs subject, eyebrow, headline, body, up
+   to three tags, service link if relevant, and intended focal moment.
 4. Camera style, always ask by feel and record as `CAMERA`:
    - **Fly through the world**: expressive dives and aerial hops; architecture B. Recommend
      for miniature/map-like diorama worlds. Direction reverses at seams by design.
@@ -103,7 +109,7 @@ Ask only decisions that change the result. Group questions into short rounds.
 6. Video provider and model, always ask unless the invocation already specifies them:
    - **Wan:** current top Wan model through the `wan` CLI; presently Wan 3.0.
    - **fal.ai:** exactly `fal-ai/kling-video/v3/pro/image-to-video` through the fal MCP.
-   Write the selection to `review/run-manifest.json` as `videoProvider` and `videoModel`.
+   Write the selection to `.scroll-world/review/run-manifest.json` as `videoProvider` and `videoModel`.
    Use that exact provider/model for every draft, orientation, revision, and production
    clip in the run. Never silently switch providers, tiers, or model endpoints.
 
@@ -134,8 +140,11 @@ Calculate `N images + (2N−1) accepted videos` for architecture B, or `N images
 accepted sequential legs` for A. Native mobile doubles video work and adds `N` image
 generations when it needs separately generated portrait compositions; a reviewed
 floating-island canvas derivative adds no generation. Show accepted-media base work
-separately from a realistic 25–50% revision allowance (more for ambitious motion). Report
-the selected provider's available concurrency, but do not narrate pricing throughout.
+separately from a risk-based revision allowance: 25–50% for simple scenes, and 50–100%+
+when strict no-glyph requirements, moving people/vehicles, literal screens, exact named
+geography/topology, dependent chains, native portrait, or complex transformations raise
+failure risk. Report the selected provider's available concurrency, but do not narrate
+pricing throughout.
 
 Use one staged estimate:
 
@@ -199,6 +208,12 @@ approved winning-branch stills for final world-level cohesion approval. Do not b
 main video chain before that approval. A user-authorized first-segment fan-out may run before
 the final winning-branch contact sheet, but each branch input still must already be approved.
 
+Before an approved still or extracted boundary frame conditions video, inspect the original
+at full resolution and inspect high-risk crops around signs, awnings/canopies, plaques,
+plates, screens, small people, vehicles, and thin props. Reject or clean any unwanted glyph,
+anatomy, topology, or object defect upstream; prompting cannot reliably remove pixels already
+baked into a conditioning frame, and a contaminated boundary invalidates its downstream chain.
+
 Generate all media through the approval gate in `references/review-workflow.md`:
 
 1. Generate one image candidate at a time. Generate at most three independent video
@@ -224,11 +239,13 @@ The seam rule is absolute:
   previous leg’s exact start frame.
 - Architecture B: connector start = previous dive’s actual final frame; connector end = next dive’s actual first frame. Never use the original concept still as a connector endpoint.
 
-Use the provider/model locked in `review/run-manifest.json` across the complete chain. For
+Use the provider/model locked in `.scroll-world/review/run-manifest.json` across the complete chain. For
 Wan, verify the current top model before the first candidate. For fal, use only the exact
 Kling v3 Pro endpoint above. Never silently fall back or switch models.
 
-Keep raw outputs. Production source renders are 1080p. Encode H.264 at CRF
+Keep prompts, manifests, candidates, raw outputs, review derivatives, and extracted frames
+under the project-local `.scroll-world/` working root. Only copy exact approved runtime
+assets into the project's configured final delivery/output location. Production source renders are 1080p. Encode H.264 at CRF
 about 20, GOP 8, fixed keyframe interval, yuv420p, no audio, faststart, with restrained
 sharpening. Native mobile is portrait, typically 720 px wide, CRF about 23, GOP 4. Never
 upscale a lower-resolution source. Do not use all-intra without measured evidence. The

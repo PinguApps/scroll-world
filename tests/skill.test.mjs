@@ -262,3 +262,35 @@ test("Wan and fal Kling provider contracts survive the Blazor-first merge", asyn
   assert.match(providers, /After the first representative video/);
   assert.match(skillSource, /Judge composition and props, not\s+raw PSNR/);
 });
+
+test("world topology, motion, conditioning, and workspace contracts are explicit", async () => {
+  const pipeline = await read("references/pipeline.md");
+  const prompts = await read("references/prompts.md");
+  const review = await read("references/review-workflow.md");
+
+  assert.match(prompts, /WORLD_TOPOLOGY/);
+  assert.match(prompts, /connected\/full-bleed/);
+  assert.match(prompts, /Do not default a named real location to a detached island/);
+  assert.match(prompts, /roads, water, or terrain/);
+  assert.doesNotMatch(prompts, /Continue the same slow, steady/);
+  assert.doesNotMatch(prompts, /Smooth, graceful, slow motion/);
+  assert.match(pipeline, /Conditioning-frame hazard gate/);
+  assert.match(pipeline, /Prompts rarely remove defects already present in conditioning pixels/);
+  assert.match(pipeline, /project-local `.scroll-world\/` working root/);
+  assert.match(pipeline, /ignored by version control/);
+  assert.match(pipeline, /configured final delivery\/output location/);
+  assert.doesNotMatch(pipeline, /Create project-local `review\/` and scratch\/output directories/);
+  assert.match(review, /contact sheets do not prove temporal\s+quality/);
+  assert.match(review, /appears or disappears unexpectedly/);
+});
+
+test("risk estimates and provider-result recovery cover expensive failure modes", async () => {
+  const prompts = await read("references/prompts.md");
+  const providers = await read("references/video-providers.md");
+
+  assert.match(prompts, /50–100%\+/);
+  assert.match(prompts, /strict no-text\/glyph constraints/);
+  assert.match(providers, /result URLs and\s+queue records are not durable storage/);
+  assert.match(providers, /billing\/account lock/);
+  assert.match(providers, /definitive\s+`404`\/`NOT_FOUND`/);
+});
