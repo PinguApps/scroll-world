@@ -1,6 +1,6 @@
 ---
 name: scroll-world
-description: Build a production-quality immersive AI-generated, scroll-scrubbed homepage in a Blazor Web App. Use for scroll cinematics, 3D or diorama worlds, fly-through landing pages, or turning a business journey into an interactive homepage. Covers discovery, brand identity, approval-gated still/video generation through Monid or Higgsfield, responsive encoding, a proven smooth scroll engine, homepage SSR/SEO/AEO, Blazor InteractiveAuto lifecycle, accessibility, regression tests, and Lighthouse/browser QA. Supporting pages are outside scope except minimal placeholders needed for navigation.
+description: Build a production-quality immersive AI-generated, scroll-scrubbed homepage in a Blazor Web App. Use for scroll cinematics, 3D or diorama worlds, fly-through landing pages, or turning a business journey into an interactive homepage. Covers discovery, brand identity, approval-gated still generation outside the video provider, provider-locked video generation through Wan 3.0 or fal.ai Kling Video v3 Pro, responsive encoding, a proven smooth scroll engine, homepage SSR/SEO/AEO, Blazor InteractiveAuto lifecycle, accessibility, regression tests, and Lighthouse/browser QA. Supporting pages are outside scope except minimal placeholders needed for navigation.
 ---
 
 # Scroll World for Blazor
@@ -53,24 +53,32 @@ Read repository instructions and inspect the solution, current render modes, rou
 
 Confirm the app is a server-hosted Blazor Web App capable of InteractiveAuto. If it lacks a WebAssembly client or enabling Auto requires a structural conversion, explain that change and get approval before doing it.
 
-Audit prerequisites without mutating the machine or account:
+Audit prerequisites without mutating the machine or account. If the video provider is not
+yet selected, defer its provider-specific checks until Phase 2:
 
-- `monid` installed with an active key; inspect its live Seedance schema and balance. Monid
-  Seedance 2.0 is the default pay-per-clip video backend. If it is unavailable or cannot
-  cover the approved chain, report that and offer Higgsfield as the fallback biller.
-- `higgsfield` installed and authenticated; inspect workspace/credits. It supplies stills,
-  Higgsfield-only models such as Kling, and the fallback video chain.
+- For Wan, require the current `wan` CLI and authenticated account. Run `wan --version`,
+  `wan update --check --output json`, `wan auth status --output json`, and
+  `wan credits --output json`. If an update exists, ask before running it. Treat
+  `taskQuota.video` as currently available concurrent submissions, not a daily allowance.
+- For fal.ai, prefer the configured fal MCP server and require access to
+  `fal-ai/kling-video/v3/pro/image-to-video`. Confirm authentication without exposing
+  `FAL_KEY`. If the MCP is unavailable, stop and explain the fallback in
+  `references/video-providers.md` rather than silently changing provider or model.
 - `ffmpeg` and `ffprobe` on PATH.
-- A native script route for the media pipeline: PowerShell 7 on Windows, or Bash 3.2+
-  with `jq` and `curl` on Unix-like systems. Do not assume one shell from another.
+- A native script route for the media pipeline: PowerShell 7 on Windows or Bash 3.2+ with
+  `jq` on Unix-like systems. Do not assume one shell from another.
 - Python 3 + Pillow only if knockout or LQIP tooling needs it.
-- Optional direct Codex image generation route if available. If only an authenticated nested
-  Codex CLI is available, every detached invocation must have stdin closed so it cannot hang.
+- A direct ChatGPT/Codex image-generation tool for every stochastic still. Never use the
+  selected video provider for images in this skill. If direct image generation is
+  unavailable, stop and ask the user to supply images or approve another image source.
 - A supported .NET SDK, the repository’s JS package runner when applicable, and an
   existing Chrome/Edge or browser-automation route for real interaction QA.
 - An existing Lighthouse installation/runner for performance auditing.
 
-If anything is missing, report the exact requirement and command. Never install tools, authenticate, switch workspaces, buy/use credits, or change account state without explicit approval. Run generation only after the user approves the estimated spend.
+If anything is missing, report the exact requirement and command. Never install tools,
+authenticate, switch workspaces, buy/use credits, or change account state without explicit
+approval. Generate only the authorized first paid sample; after it completes, present the
+single remaining-work estimate before continuing.
 
 ## Phase 2 — Interview and lock the brief
 
@@ -78,7 +86,13 @@ Ask only decisions that change the result. Group questions into short rounds.
 
 1. Subject, audience, location/service area, offers, proof, objections, CTA, contact details, and one-sentence commercial goal.
 2. Brand source: import from an existing site, supplied kit, or propose a full identity for approval. Capture name, voice, typography direction, and 4–6 named colours.
-3. Art direction and ordered journey. Propose 5–7 scenes derived from the customer journey or value chain. Every scene needs subject, eyebrow, headline, body, up to three tags, service link if relevant, and intended focal moment.
+3. Art direction, world topology/locality, and ordered journey. Explicitly lock whether the
+   world is a detached miniature island or connected/full-bleed terrain. For a named real
+   place, capture the architecture, road/ground materials, vegetation, weather/light, and
+   topography that make it read correctly; brand colours are accents when recolouring the
+   environment would change that geographic reading. Propose 5–7 scenes derived from the
+   customer journey or value chain. Every scene needs subject, eyebrow, headline, body, up
+   to three tags, service link if relevant, and intended focal moment.
 4. Camera style, always ask by feel and record as `CAMERA`:
    - **Fly through the world**: expressive dives and aerial hops; architecture B. Recommend
      for miniature/map-like diorama worlds. Direction reverses at seams by design.
@@ -92,53 +106,56 @@ Ask only decisions that change the result. Group questions into short rounds.
    native portrait approximately doubles video spend and may add `N` portrait image
    generations when separate compositions are required. Never silently call a centre
    crop “mobile-optimised.”
-6. Backend and quality, always inspect the live schemas and ask. Use Monid's
-   `bytedance /v1/video/seedance-2.0` pay-per-clip route by default; use Higgsfield when
-   the user prefers its credits, the Monid balance is insufficient, or the approved model
-   is Higgsfield-only. Monid uses the same Seedance family but a different serving stack;
-   if switching provider mid-chain becomes necessary, review the first rescued seam before
-   continuing.
+6. Video provider and model, always ask unless the invocation already specifies them:
+   - **Wan:** current top Wan model through the `wan` CLI; presently Wan 3.0.
+   - **fal.ai:** exactly `fal-ai/kling-video/v3/pro/image-to-video` through the fal MCP.
+   Write the selection to `.scroll-world/review/run-manifest.json` as `videoProvider` and `videoModel`.
+   Use that exact provider/model for every draft, orientation, revision, and production
+   clip in the run. Never silently switch providers, tiers, or model endpoints.
 
-   | Tier | Video route | Purpose |
+   | Provider | Draft/previz | Production |
    |---|---|---|
-   | Draft/previz | Higgsfield `seedance_2_0_mini`, 480p or 720p; or Monid Seedance 2.0 at 480p | Lowest-cost motion/composition validation |
-   | Efficient | Higgsfield `seedance_2_0`, Fast, 480p or 720p; or Monid Seedance 2.0 at 720p | Lower-cost HD delivery |
-   | Production | Higgsfield `seedance_2_0`, Standard, 1080p; or Monid Seedance 2.0 at 1080p | Default web-production master |
-   | Premium master | Higgsfield `seedance_2_0`, Standard, 4K | Archive/crop headroom; expensive and rarely worth serving directly |
-   | Alternate | Higgsfield `kling3_0`, Standard/Pro/4K mode | Different motion/look or filter fallback; verify native output with `ffprobe` |
+   | Wan | Current top model, `720P`, generated audio off | Same model, `1080P`, generated audio off |
+   | fal.ai Kling v3 Pro | Same Pro endpoint, generated audio off; no resolution field exists | Same Pro endpoint; verify the returned source is a valid 1080p master |
 
-   Also choose one still source for the whole chain:
-   - Higgsfield `gpt_image_2`: 1K/2K/4K and low/medium/high; default 2K high.
-   - Higgsfield `nano_banana_2`/Nano Banana Pro: 1K/2K/4K alternative when its
-     composition style better suits the brief.
-   - Codex image generation when directly available to the agent: no Higgsfield credits,
-     but subject to Codex usage and available output sizes. Prefer the direct tool; use a
-     nested Codex CLI only when no direct image-generation tool exists and the CLI is
-     already installed/authenticated.
+   Do not use Kling Standard merely to obtain a cheaper 720p draft. A downscaled review
+   proxy is not a cheaper generation. If fal's Pro result does not meet production source
+   requirements, stop rather than upscaling or changing endpoint.
 
-   Never mix still models/sources within one chain.
-   Ask whether to use standard or high source bitrate where the model exposes it. Disable
-   generated audio: the homepage is muted and audio can materially increase credit cost.
-7. CTA destinations: reuse existing routes/external destinations, or ask permission to create
+   Generate all stochastic stills with the direct ChatGPT/Codex image-generation tool,
+   using one approved style/model path throughout. Never call a video provider's image
+   generator from this skill. Disable generated video audio; the homepage is muted.
+7. Optional comparison fan-out: when the user wants to compare major directions—such as
+   diorama versus photoreal, or alternate camera treatments—offer to generate the first
+   segment for each named option. Lock separate branch prompts and inputs, approval-gate
+   every still and video, then require one explicit winning branch before downstream work.
+   Do not use rejected or unselected branches to inform later prompts.
+8. CTA destinations: reuse existing routes/external destinations, or ask permission to create
    minimal “Coming soon” placeholders for missing internal routes. A placeholder contains only
    a heading, short status sentence, and link home; never turn it into a substantive page.
-8. Deployment/media origin: local assets for development or a CDN. Capture the canonical
+9. Deployment/media origin: local assets for development or a CDN. Capture the canonical
    production origin for homepage canonical/social metadata and homepage JSON-LD.
 
 Calculate `N images + (2N−1) accepted videos` for architecture B, or `N images + N
 accepted sequential legs` for A. Native mobile doubles video work and adds `N` image
 generations when it needs separately generated portrait compositions; a reviewed
-floating-island canvas derivative adds no generation. Show accepted-media base cost
-separately from a realistic 25–50% revision allowance (more for ambitious motion).
-Use the live Monid price/schema and balance rather than relying on historical figures.
+floating-island canvas derivative adds no generation. Show accepted-media base work
+separately from a risk-based revision allowance: 25–50% for simple scenes, and 50–100%+
+when strict no-glyph requirements, moving people/vehicles, literal screens, exact named
+geography/topology, dependent chains, native portrait, or complex transformations raise
+failure risk. Report the selected provider's available concurrency, but do not narrate
+pricing throughout.
 
-Use staged spend approval because live prices vary:
+Use one staged estimate:
 
-1. Approve the preflight estimate before any paid generation.
-2. Generate/review one image candidate, measure the balance change, recalculate the
-   remaining image budget, and confirm it before continuing.
-3. After the approved image set/cohesion gate, generate/review one representative video,
-   measure it, recalculate the remaining video budget, and confirm it before continuing.
+1. Confirm the accepted-media count, revision allowance, and permission to generate one
+   paid representative video.
+2. Generate/review one image candidate through the direct image tool and confirm the
+   remaining image plan before continuing.
+3. After the approved image set/cohesion gate, generate one representative video. Once it
+   completes, use its measured/provider rate to estimate the remaining video work once and
+   confirm continuation. Mention price again only if scope, provider, model, duration, or
+   revision allowance changes materially.
 
 Never treat a budget allowance as permission to batch or auto-reroll.
 
@@ -168,40 +185,43 @@ requested; preserve and report existing site behaviour instead.
 
 ## Phase 4 — Generate a seamless media chain
 
-Read `references/prompts.md`, `references/pipeline.md`, and `references/media-gotchas.md` completely before generating.
+Read `references/prompts.md`, `references/pipeline.md`, `references/video-providers.md`, and
+`references/media-gotchas.md` completely before generating.
 
-The default video backend is Monid `bytedance /v1/video/seedance-2.0`, qualified for
-first- and last-frame conditioning on 2026-07-25. Re-inspect it before every build because
-the catalog can change. Its contract differs from Higgsfield:
+Use the locked adapter in `references/video-providers.md` for every generated clip. Supply
+the approved first frame for each leg/dive and the optional approved last frame for
+architecture-B connectors. Input aspect determines the output composition, so prepare
+approved 16:9 desktop or 9:16 portrait boundaries before submission. Always disable audio.
 
-- Upload boundary frames through Monid's free workspace file system and pass the resulting
-  signed HTTPS URLs; inline/base64 image data is rejected.
-- Pass `ratio` explicitly (`16:9` desktop or `9:16` native mobile); the adaptive default can
-  follow an input still's aspect instead.
-- Read and report `cost.value` after every candidate, and download results immediately
-  because their URLs expire.
-- If the input schema changed, qualify cheaply before committing: first-frame + prompt must
-  preserve the opening composition and obey motion; connector qualification must also land
-  on a distinct last-frame composition. Use PSNR only as a supporting signal—visual
-  composition is authoritative. A start-only route qualifies for architecture A, not B.
+Use maximum parallelism `min(3, live provider concurrency)`. Wan derives live availability
+from `taskQuota.video`; fal Kling defaults to one concurrent request unless the account/tool
+reports a higher limit. Architecture-A legs remain sequential. Architecture-B dives,
+connectors, or named fan-out branches may share available slots only when independent and
+explicitly authorized. Every result still receives separate review. Never start downstream
+prompting from an unapproved candidate.
 
-Higgsfield remains the fallback biller and the route for Higgsfield-only models. Use one
-model/provider for the chain where possible; any unavoidable switch requires explicit seam
-review before further spend.
-
-Use one byte-identical style preamble, palette, lens/lighting language, and still source
-throughout. Generate and approve every stochastic image through
+After any comparison fan-out is resolved, use the winning byte-identical style preamble,
+palette, lens/lighting language, and still source throughout. Generate and approve every stochastic image through
 `references/review-workflow.md`, exactly one candidate at a time. After every scene still is
-individually approved, present a contact sheet of approved stills for final world-level
-cohesion approval. Do not begin video generation before that approval.
+individually approved in the selected branch, present a contact sheet containing only those
+approved winning-branch stills for final world-level cohesion approval. Do not begin the
+main video chain before that approval. A user-authorized first-segment fan-out may run before
+the final winning-branch contact sheet, but each branch input still must already be approved.
 
-Generate all media through the approval gate in `references/review-workflow.md`. Never batch,
-parallelize, queue, or automatically continue through still or video generations:
+Before an approved still or extracted boundary frame conditions video, inspect the original
+at full resolution and inspect high-risk crops around signs, awnings/canopies, plaques,
+plates, screens, small people, vehicles, and thin props. Reject or clean any unwanted glyph,
+anatomy, topology, or object defect upstream; prompting cannot reliably remove pixels already
+baked into a conditioning frame, and a contaminated boundary invalidates its downstream chain.
 
-1. Generate exactly one image or video candidate.
-2. Download it and present the actual candidate with its prompt, model/source, dimensions,
-   quality/settings, revision number, and measured credit deduction where applicable. For
-   video, also create review frames/proxy and report duration.
+Generate all media through the approval gate in `references/review-workflow.md`:
+
+1. Generate one image candidate at a time. Generate at most three independent video
+   candidates concurrently, never exceeding the selected provider's lower live limit; use
+   one-at-a-time whenever dependency order requires it.
+2. Download it and present the actual candidate with its prompt, provider/model, dimensions,
+   settings, order/branch, and revision. For video, also create review frames/proxy and
+   report duration. Do not repeat pricing during every review.
 3. Wait for an explicit thumbs-up/approval or thumbs-down with feedback.
 4. On rejection, preserve the old candidate, record the fault, revise only what the
    feedback warrants, and generate one replacement within the approved revision budget.
@@ -214,19 +234,18 @@ portrait variants require their own review. Desktop approval does not approve mo
 The seam rule is absolute:
 
 - Architecture A: each next leg starts from the previous leg’s actual final rendered
-  frame. End and begin with the same gentle forward drift. No connectors. For Higgsfield
-  Seedance legs after the first, also pass that scene’s approved still as a non-boundary
-  image reference so the new environment remains visually controlled. On Monid, add such
-  a reference only if the inspected schema explicitly supports it; otherwise use the exact
-  first frame plus the scene prompt. Never substitute a concept still for the previous
-  leg’s exact start frame. Kling lacks this separate image-reference input and therefore
-  relies more heavily on the prompt.
+  frame. End and begin with the same gentle forward drift. No connectors. Use the exact
+  first frame plus the locked scene/style prompt; never substitute a concept still for the
+  previous leg’s exact start frame.
 - Architecture B: connector start = previous dive’s actual final frame; connector end = next dive’s actual first frame. Never use the original concept still as a connector endpoint.
 
-Use one frame-locking video model across the chain. Supported roster: `seedance_2_0`, `seedance_2_0_mini`, `kling3_0`. Verify the current model schema before the first candidate. A requested alternative is valid only if its start/end conditioning satisfies the chosen architecture.
+Use the provider/model locked in `.scroll-world/review/run-manifest.json` across the complete chain. For
+Wan, verify the current top model before the first candidate. For fal, use only the exact
+Kling v3 Pro endpoint above. Never silently fall back or switch models.
 
-Keep raw outputs. Retain 4K as an archive/crop master; normally deliver the desktop
-background at no more than 1080p unless measurement justifies more. Encode H.264 at CRF
+Keep prompts, manifests, candidates, raw outputs, review derivatives, and extracted frames
+under the project-local `.scroll-world/` working root. Only copy exact approved runtime
+assets into the project's configured final delivery/output location. Production source renders are 1080p. Encode H.264 at CRF
 about 20, GOP 8, fixed keyframe interval, yuv420p, no audio, faststart, with restrained
 sharpening. Native mobile is portrait, typically 720 px wide, CRF about 23, GOP 4. Never
 upscale a lower-resolution source. Do not use all-intra without measured evidence. The
@@ -294,7 +313,7 @@ Deliver:
 - The finished Blazor homepage integration and generated assets.
 - A short list of approved choices and tuned per-section pacing/focus values.
 - Build/test/Lighthouse/network results.
-- Media spend, provider, and rerolls.
+- Approximate media spend, provider request/task IDs, locked model, and rerolls.
 - Any deployment assumptions. For a CDN such as Bunny, recommend versioned immutable URLs, Brotli for text assets, correct MIME/CORS, long cache lifetimes, and byte-range support; Blob loading still provides robust local seekability.
 - A clear note if mobile is desktop fallback/crop rather than native portrait.
 - A clear boundary note that substantive supporting pages and site-wide SEO/AEO remain
@@ -305,13 +324,14 @@ Do not claim completion until the solution builds, relevant automated tests pass
 ## Reference routing
 
 - `references/prompts.md` — intake and image/video prompt patterns.
-- `references/pipeline.md` — Monid/Higgsfield generation, frame extraction, encoding, native mobile chain.
+- `references/pipeline.md` — provider-neutral still/video orchestration, naming, fan-out, frame extraction, encoding, and native mobile chain.
+- `references/video-providers.md` — exact Wan and fal.ai Kling v3 Pro submission, waiting, payload, and failure contracts.
 - `references/scrub-engine.js` — canonical engine; copy rather than reimplement.
 - `references/blazor-integration.md` — exact SSR/InteractiveAuto and enhanced-navigation wiring.
 - `references/homepage-foundation.md` — homepage SSR/SEO/AEO, accessibility, LQIP, and CDN.
 - `references/qa.md` — regression and browser/performance matrix.
 - `references/media-gotchas.md` — generation, seam, encoder, and device failure guide.
-- `references/review-workflow.md` — mandatory one-candidate-at-a-time approval ledger.
+- `references/review-workflow.md` — mandatory per-candidate approval ledger and dependency gates.
 - `references/knockout.py` — optional border-connected background knockout.
 - `assets/blazor/*` — integration and critical-CSS templates.
 - `assets/tests/*` — portable Node regression-test template.
