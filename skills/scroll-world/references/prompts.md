@@ -28,7 +28,7 @@ Collect and write down:
 - `LOCALITY` — architecture, road/ground materials, vegetation, weather/light, coastline or
   topography, and other cues that make a named place read correctly. Use brand colours as
   accents when applying them to roads, water, or terrain would change the geographic reading.
-- `SECTIONS[]` — ordered list; for each: `id`, `label`, `subject` (what's in the diorama), `eyebrow`, `title`, `body` (≤ 1 sentence), `tags[]` (0–3). Last section = hero product + CTA.
+- `SECTIONS[]` — ordered list; for each: `id`, `label`, `subject` (what is in the scene), `eyebrow`, `title`, `body` (≤ 1 sentence), `tags[]` (0–3). Last section = hero product + CTA.
 - `CAMERA` — fly-through (architecture B: dives plus aerial hops) | walkthrough
   (architecture A: expressive, always-forward legs) | locked-iso (architecture A plus
   the fixed-angle clause below). **Always ask** and explain the feel/trade-off of each.
@@ -83,17 +83,104 @@ Keep the locality clause byte-identical across scenes. It should name only stabl
 cues from the locked brief, not stereotypes or invented landmarks.
 
 Alternate directions (swap the first two sentences, keep the palette/no-text tail):
-- **Flat papercraft:** "Isometric layered paper-craft diorama, matte cardstock, clean die-cut edges, subtle drop shadows between layers."
-- **Glossy toy:** "Isometric glossy vinyl-toy diorama, smooth plastic shading, soft rim light, collectible figurine look."
-- **Claymation:** "Isometric stop-motion clay set, visible thumbprints, handmade plasticine texture, soft studio softbox light."
-- **Neon night:** "Isometric miniature at night, warm interior glow and neon signage, moody rim light, wet reflective ground."
-- **Photoreal architectural** (real estate, hospitality, premium/luxury): "Ultra-photorealistic architectural photography of a single cohesive [subject], cinematic wide-angle, warm golden-hour light, natural materials, restrained designer furnishings, a breathtaking view, editorial magazine quality (Architectural Digest), shallow depth of field, no people." For photoreal, drop the floating-island framing and the knockout — the scenes are **full-bleed** (a dark page background reads premium), the "dive" glides *through doorways/glass* rather than opening a roof, and cohesion comes entirely from the identical preamble (do NOT pass an `--image` reference — it clones the same room).
+
+- **Flat papercraft:** "Isometric layered papercraft diorama built from premium matte
+  cardstock. Use precise die-cut edges, deliberate folds, fine paper fibres, stacked depth
+  planes, and soft contact shadows between layers; keep the finish editorial and refined."
+- **Glossy toy:** "Isometric premium vinyl-toy diorama with smooth moulded forms. Use
+  controlled semi-gloss plastic shading, crisp silhouettes, translucent details only where
+  physically plausible, soft rim light, and the finish of a sophisticated collectible."
+- **Claymation:** "Isometric stop-motion set handmade from plasticine. Use visible but
+  restrained fingerprints, sculpting marks, gently imperfect edges, expressive modelled
+  forms, and softbox lighting that reads as a premium practical-animation stage."
+- **Neon night:** "Isometric night miniature with rain-dark surfaces, warm interiors, and
+  restrained neon ambience. Attach every teal, coral, or amber glow to a visible blank
+  canopy edge, window reveal, handrail, or architectural fixture; use wet reflections,
+  moody rim light, and deep cinematic shadows."
+- **Photoreal architectural:** "Ultra-photorealistic architectural photography of one
+  cohesive environment. Use accurate construction, premium natural materials, restrained
+  interiors, a cinematic wide-angle lens, warm golden-hour light, controlled verticals,
+  editorial composition, realistic reflections, and shallow but practical depth of field."
+- **Architectural maquette:** "Isometric professional architectural presentation model
+  built from precision-cut foamboard, museum board, basswood, and translucent acrylic.
+  Use exact massing, crisp joins, restrained material samples, soft gallery lighting, and
+  the calm clarity of a competition maquette."
+- **British model village:** "Isometric practical model village grounded in recognisable
+  British vernacular architecture. Use finely built masonry, slate roofs, realistic road
+  proportions, hedges, coastal-weather patina, tiny warm interiors, and restrained
+  museum-quality model-railway craftsmanship."
+- **Hand-painted resin miniature:** "Isometric cast-resin miniature with individually
+  hand-painted surfaces. Use fine brush variation, subtle edge highlights, matte varnish,
+  carefully weathered stone and metal, crisp sculpted detail, and premium tabletop-display
+  lighting."
+- **Low-poly game world:** "Isometric low-poly environment with intentional faceted
+  geometry and a production-ready game-art finish. Use simplified architectural masses,
+  restrained texture density, clean baked-light gradients, stable edges, readable material
+  separation, and calm atmospheric depth."
+- **Frosted acrylic and glass:** "Isometric architectural world assembled from frosted
+  acrylic, translucent resin, and clear glass. Use crisp opaque structural cores, controlled
+  refraction, softly glowing edges, limited internal reflections, and precise studio lighting
+  so every building keeps a strong readable silhouette."
+- **Gouache storybook:** "Isometric storybook scene painted in opaque gouache on subtly
+  textured paper. Use confident matte brush shapes, layered colour, softened but deliberate
+  edges, simplified perspective, restrained dry-brush detail, and warm editorial lighting."
+- **Watercolour and ink:** "Isometric architectural illustration drawn with controlled
+  waterproof ink and transparent watercolour washes. Use assured line weight, selective
+  pigment blooms, visible paper grain, luminous layered colour, generous tonal hierarchy,
+  and clean silhouettes around every focal subject."
+- **Layered paper collage:** "Isometric editorial collage assembled from cut and gently
+  torn coloured paper. Use visible paper fibres, overlapping shape planes, tactile edge
+  variation, shallow parallax, selective abstract printed texture,
+  and a carefully art-directed magazine finish."
+- **Felt and wool stop-motion:** "Isometric stop-motion world handmade from needle-felted
+  wool, stitched fabric, and compact textile forms. Use visible fibres, neat seams, soft
+  tactile volume, miniature practical lighting, and firmly shaped edges that remain coherent
+  at small scale."
+- **Wooden toy town:** "Isometric town carved from hardwood and painted wood. Use visible
+  natural grain, rounded joinery, matte painted accents, small inset windows, simple durable
+  forms, and warm workshop lighting with a premium heirloom-toy finish."
+- **Blueprint and technical drawing:** "Axonometric technical illustration on a deep
+  blueprint field. Use precise luminous drafting lines, selective solid cutaway masses,
+  measured line-weight hierarchy, sparse cyan and warm accent highlights, clean junctions,
+  and an elegant unlabelled architectural-visualisation finish."
+- **Retro-futurist:** "Isometric optimistic retro-futurist world shaped by mid-century
+  industrial design. Use sweeping but plausible architecture, warm analogue materials,
+  streamlined civic details, softly integrated technology, sun-faded colour blocking,
+  tactile model-making, and cinematic 1960s–1970s concept-art lighting."
+- **Solarpunk:** "Isometric near-future community where technology and ecology are visibly
+  integrated. Use plausible timber and stone construction, abundant region-appropriate
+  planting, passive shading, solar surfaces, water management, warm daylight, and crafted
+  credible human-scale infrastructure."
+- **Cinematic photoreal:** "Photorealistic cinematic location still with grounded,
+  lived-in environmental detail. Use a natural 35 mm film perspective, realistic weather
+  and surface wear, motivated practical light, subtle coastal atmosphere, restrained film
+  grain, truthful colour, and deep enough focus to preserve the complete camera route."
+- **Graphic cel-shaded 3D:** "Isometric 3D world rendered with graphic cel shading. Use
+  clean contour lines, two-to-three deliberate tonal bands per material, controlled ambient
+  shadows, bold readable silhouettes, restrained texture, and polished animation-production
+  design with disciplined graphic effects."
+- **Monochrome with brand accents:** "Isometric world rendered primarily in one restrained
+  neutral material family. Preserve believable material values and depth, then apply the
+  approved brand colours only to focal doors, windows, routes, and service moments; use
+  disciplined contrast and soft studio lighting."
+
+Photoreal branches use connected/full-bleed topology and real openings such as streets,
+doors, or glazing for camera travel. Keep the approved art direction through the identical
+text preamble; use reference inputs only when the selected image tool can preserve composition
+without cloning one scene into every section.
+
+After the style is approved, derive one concise `[STYLE VIDEO TAIL]` from the selected
+direction: retain
+the medium, materials, lighting, edge/shading language, topology, locality, and palette;
+omit still-only composition wording. Record it with the branch and reuse it byte-for-byte
+in every video prompt. The tail is complete when a frame from any leg can be identified as
+the approved medium without relying on its subject matter.
 
 ## Scene still prompt (SKILL Phase 4)
 
 ```
 [STYLE PREAMBLE]
-Subject: [SECTION.subject — describe the miniature scene: the building/space, a few
+Subject: [SECTION.subject — describe the scene: the building/space, a few
 characters doing the work, the props that signal this stage of the business].
 ```
 
@@ -133,7 +220,7 @@ Single continuous cinematic camera move, no cuts. **Continue the same steady for
 glide.** [MID-LEG MOVE — optional, from the library below.] The camera moves into
 [SCENE i] toward [FOCAL POINT]. **In the final second, settle into a steady forward
 glide toward [the doorway / opening / direction of the next scene].**
-[STYLE tail + PALETTE]. Smooth continuous motion, subtle parallax. No text, no captions.
+[STYLE VIDEO TAIL]. Smooth continuous motion, subtle parallax. No text, no captions.
 ```
 
 For `CAMERA = locked-iso`, omit the mid-leg move and include this clause in every leg:
@@ -174,11 +261,10 @@ next leg.
 
 ```
 Single continuous cinematic camera move, no cuts. Begin high and far, looking down at the
-whole [SECTION.subject] from outside like a tiny model. The camera glides forward
+whole [SECTION.subject] within its environment. The camera glides forward
 and descends toward it, sweeping in toward [FOCAL POINT — the counter/the cauldrons/the
 people], as if flying inside. As the camera pushes in, the roof and upper structure
-gently lift and open away to reveal the warm interior. [STYLE tail: soft matte clay
-diorama, tilt-shift miniature, warm light, [PALETTE]]. Smooth continuous motion,
+gently lift and open away to reveal the warm interior. [STYLE VIDEO TAIL]. Smooth continuous motion,
 subtle parallax. No text, no captions.
 ```
 
@@ -200,9 +286,9 @@ or `1080P` for production. fal/Kling accepts no resolution field and must use `p
 
 ```
 Single continuous cinematic camera move, no cuts. The camera smoothly pulls up and back
-out of [SCENE i], rising into the sky, then glides forward across the connected miniature
+out of [SCENE i], rising into the sky, then glides forward across the connected
 world and arrives above [SCENE i+1], beginning to descend toward it. One connected
-miniature clay world, seamless flowing aerial transition. [STYLE tail + PALETTE]. Smooth
+world in the approved medium, seamless flowing aerial transition. [STYLE VIDEO TAIL]. Smooth
 continuous motion. No text, no captions.
 ```
 

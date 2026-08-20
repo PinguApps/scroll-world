@@ -294,3 +294,47 @@ test("risk estimates and provider-result recovery cover expensive failure modes"
   assert.match(providers, /billing\/account lock/);
   assert.match(providers, /definitive\s+`404`\/`NOT_FOUND`/);
 });
+
+test("the still-prompt library keeps every alternate direction in one flat format", async () => {
+  const prompts = await read("references/prompts.md");
+  const alternateStyles = [
+    "Flat papercraft",
+    "Glossy toy",
+    "Claymation",
+    "Neon night",
+    "Photoreal architectural",
+    "Architectural maquette",
+    "British model village",
+    "Hand-painted resin miniature",
+    "Low-poly game world",
+    "Frosted acrylic and glass",
+    "Gouache storybook",
+    "Watercolour and ink",
+    "Layered paper collage",
+    "Felt and wool stop-motion",
+    "Wooden toy town",
+    "Blueprint and technical drawing",
+    "Retro-futurist",
+    "Solarpunk",
+    "Cinematic photoreal",
+    "Graphic cel-shaded 3D",
+    "Monochrome with brand accents"
+  ];
+
+  assert.match(prompts, /## Style preamble \(default: clay diorama\)/);
+  assert.match(prompts, /Alternate directions \(swap the first two sentences, keep the palette\/no-text tail\):/);
+  assert.match(prompts, /Isometric low-poly 3D diorama/);
+
+  for (const style of alternateStyles) {
+    assert.ok(prompts.includes(`- **${style}:** "`), `missing flat alternate style: ${style}`);
+  }
+
+  assert.doesNotMatch(prompts, /^### .*styles$/m);
+  assert.doesNotMatch(prompts, /\[STYLE BLOCK\]/);
+  assert.match(prompts, /no text, no letters, no numbers, no logos, no watermarks/);
+  assert.match(prompts, /Photoreal branches use connected\/full-bleed topology/);
+  assert.match(prompts, /derive one concise `\[STYLE VIDEO TAIL\]`/);
+  assert.doesNotMatch(prompts, /miniature clay world/);
+  assert.doesNotMatch(prompts, /\[STYLE tail/);
+  assert.doesNotMatch(prompts, /neon signage/);
+});
