@@ -69,7 +69,8 @@ Isometric low-poly 3D diorama. [WORLD_TOPOLOGY CLAUSE] [LOCALITY CLAUSE].
 Soft matte clay 3D render,
 rounded toy-model shapes, gentle warm studio lighting, soft long shadows, tilt-shift
 miniature look. Cohesive color palette of [PALETTE]. Highly detailed, centered
-composition, absolutely no text, no letters, no numbers, no logos.
+composition, absolutely no text, no letters, no numbers, no logos, no watermarks,
+no pseudo-text, no decorative glyphs.
 ```
 
 Topology clauses:
