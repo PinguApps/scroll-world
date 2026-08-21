@@ -318,7 +318,28 @@ test("the still-prompt library keeps every alternate direction in one flat forma
     "Solarpunk",
     "Cinematic photoreal",
     "Graphic cel-shaded 3D",
-    "Monochrome with brand accents"
+    "Monochrome with brand accents",
+    "Copperplate engraving",
+    "Bold linocut",
+    "Risograph poster world",
+    "Comic halftone metropolis",
+    "16-bit pixel-art world",
+    "Paper-quilled city",
+    "Inflatable soft architecture",
+    "Found-object assemblage",
+    "Stained-glass world",
+    "Mosaic tesserae world",
+    "Carved stone bas-relief",
+    "Geode crystal world",
+    "Confectionery model world",
+    "Clockwork automaton city",
+    "Circuit-board metropolis",
+    "Pinball playfield world",
+    "Rube Goldberg world",
+    "Impossible-geometry world",
+    "Expressionist stage-set city",
+    "Psychedelic biomorphic dreamscape",
+    "Brutalist monumental world"
   ];
 
   assert.match(prompts, /## Style preamble \(default: clay diorama\)/);
@@ -337,4 +358,17 @@ test("the still-prompt library keeps every alternate direction in one flat forma
   assert.doesNotMatch(prompts, /miniature clay world/);
   assert.doesNotMatch(prompts, /\[STYLE tail/);
   assert.doesNotMatch(prompts, /neon signage/);
+});
+
+test("lived-in worlds use purposeful people and continuous human action", async () => {
+  const skillSource = await read("SKILL.md");
+  const prompts = await read("references/prompts.md");
+
+  assert.match(skillSource, /Default to a lived-in world/);
+  assert.match(skillSource, /Every visible person continues a coherent ordinary action/);
+  assert.match(prompts, /typically 2–6/);
+  assert.match(prompts, /caught mid-action/);
+  assert.match(prompts, /\[LIVED-IN MOTION CLAUSE\]/);
+  assert.match(prompts, /Every visible person continues a coherent ordinary action/);
+  assert.match(prompts, /never freezes into a statue/);
 });

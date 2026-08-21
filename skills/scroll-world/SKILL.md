@@ -171,6 +171,11 @@ Write only the concise content needed by the cinematic sections and semantic hom
 Avoid keyword stuffing, invented testimonials, fake reviews, fake pricing, fake credentials,
 or unsupported claims. Do not flesh out linked pages.
 
+Default to a lived-in world. Where people naturally belong, include a sparse, readable
+handful with a clear reason to be there—walking, working, talking, shopping, waiting, or
+using the space. Leave a scene empty only when its subject or mood genuinely calls for it;
+avoid decorative crowds, blocked camera routes, and people placed in vehicle paths.
+
 Implement homepage title, description, canonical, Open Graph/Twitter metadata, accessible
 heading hierarchy, and only truthful homepage JSON-LD. Use `WebPage`, `WebSite`, and a
 truthful `Organization`/`LocalBusiness` only when the required facts are supplied.
@@ -213,6 +218,11 @@ at full resolution and inspect high-risk crops around signs, awnings/canopies, p
 plates, screens, small people, vehicles, and thin props. Reject or clean any unwanted glyph,
 anatomy, topology, or object defect upstream; prompting cannot reliably remove pixels already
 baked into a conditioning frame, and a contaminated boundary invalidates its downstream chain.
+
+Every visible person continues a coherent ordinary action throughout video—walking along a
+safe route, working at a table or counter, talking, browsing, tending the scene, or another
+brief-appropriate activity. Reject frozen/statue-like people, unexplained stopping, spawning,
+vanishing, collisions, path crossings with vehicles, or anatomy changes.
 
 Generate all media through the approval gate in `references/review-workflow.md`:
 

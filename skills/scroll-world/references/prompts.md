@@ -164,6 +164,90 @@ Alternate directions (swap the first two sentences, keep the palette/no-text tai
   neutral material family. Preserve believable material values and depth, then apply the
   approved brand colours only to focal doors, windows, routes, and service moments; use
   disciplined contrast and soft studio lighting."
+- **Copperplate engraving:** "Axonometric architectural world rendered as a fine copperplate
+  engraving on warm cotton-rag paper. Use crisp burin-cut contours, disciplined cross-hatching,
+  stippled tonal modelling, varied engraved line weight, restrained sepia-black ink, and
+  selective brand-colour hand tinting while keeping every spatial plane clearly readable."
+- **Bold linocut:** "Axonometric relief-print world carved as a bold linocut. Use forceful
+  gouged contours, broad black ink masses, visible carved chatter, simplified negative space,
+  crisp block-printed silhouettes, a tightly limited brand palette, and slight physical ink
+  texture without muddying small figures or architecture."
+- **Risograph poster world:** "Axonometric editorial world printed as a premium risograph
+  poster. Use two-to-four spot inks, deliberate but tightly controlled colour misregistration,
+  coarse halftone grain, overprinted translucent colour, uncoated paper texture, strong flat
+  silhouettes, and clean tonal separation that survives motion."
+- **Comic halftone metropolis:** "Axonometric printed-comic metropolis built from assertive
+  ink contours and flat graphic colour. Use disciplined Ben-Day halftones, selective black
+  shadow shapes, controlled speed accents only around real movement, crisp panel-quality
+  composition, and physical offset-print texture without panels, speech balloons, or lettering."
+- **16-bit pixel-art world:** "High-angle axonometric world rendered as authentic 16-bit
+  pixel art. Use a strict low-resolution pixel grid, hand-placed clusters, stepped diagonals,
+  limited indexed colour, compact readable sprites, deliberate one-pixel highlights, and
+  absolutely crisp nearest-neighbour edges with no painterly smoothing or sub-pixel detail."
+- **Paper-quilled city:** "Isometric city handcrafted entirely from narrow paper-quilling
+  strips. Use tightly controlled coils, teardrops, scrolls and edge-on loops to construct
+  buildings, roads, water, foliage and people; show visible paper edges, precise glued joins,
+  shallow dimensional relief, clean silhouettes, and soft gallery contact shadows."
+- **Inflatable soft architecture:** "Isometric inhabited world built as large-scale inflatable
+  soft architecture. Use taut air-filled volumes, heat-welded and stitched seams, rounded
+  structural ribs, subtle fabric translucency, gentle pressure deformation, soft bounce-light,
+  and stable legible forms that feel engineered rather than balloon-like decoration."
+- **Found-object assemblage:** "Isometric city ingeniously assembled from recognisable found
+  objects and workshop remnants. Repurpose buttons, rulers, springs, clips, tins, cork, wire,
+  keys and small mechanisms at consistent miniature scale; retain honest wear, visible joins,
+  coherent construction logic, practical lighting, and a curated museum-assemblage finish."
+- **Stained-glass world:** "Isometric architectural world constructed as dimensional stained
+  glass. Use individually cut jewel-coloured panes, dark structural lead cames, varied handblown
+  glass texture, transmitted daylight, controlled coloured caustics, crisp silhouettes, and
+  enough opaque support to keep buildings, routes and people spatially unambiguous."
+- **Mosaic tesserae world:** "Isometric world built from thousands of hand-set stone, ceramic
+  and glass tesserae. Use purposeful tile orientation that follows each form, irregular but
+  controlled edges, visible grout, subtle height variation, sparse gold tesserae highlights,
+  matte raking light, and clear large-scale silhouettes beneath the intricate surface."
+- **Carved stone bas-relief:** "Axonometric inhabited landscape carved as one monumental stone
+  bas-relief. Use layered relief depth, crisp chisel-cut profiles, visible point and tooth-tool
+  marks, selectively polished focal surfaces, deep raking shadows, restrained mineral colour,
+  and undercut details that distinguish people, streets and architecture without paint."
+- **Geode crystal world:** "Isometric world grown through a vast natural geode. Use opaque
+  mineral foundations, readable faceted crystal architecture, quartz and amethyst cavities,
+  rough host-rock boundaries, controlled internal refraction, restrained spectral highlights,
+  and stable silhouettes that avoid turning the environment into transparent glass."
+- **Confectionery model world:** "Isometric edible model world crafted by an elite pastry
+  studio. Use sponge and biscuit structures, tempered-chocolate roofs, rolled fondant details,
+  piped icing, marzipan foliage and restrained spun-sugar glazing; preserve convincing edible
+  textures, precise construction, appetising studio light, and sophisticated rather than childish styling."
+- **Clockwork automaton city:** "Isometric inhabited city engineered as a working clockwork
+  automaton. Use interlocking brass and steel gears, cams, escapements, shafts, springs and
+  articulated architectural mechanisms with plausible mechanical purpose, readable movement
+  paths, warm oiled-metal patina, precise machining, and dramatic workshop light."
+- **Circuit-board metropolis:** "Isometric metropolis built directly onto a premium printed
+  circuit board. Turn copper traces into roads, vias into junctions, and chips, capacitors,
+  heat sinks and relays into architecture while preserving plausible electronic construction,
+  crisp solder detail, controlled indicator light, dark substrate contrast, and human-scale readability."
+- **Pinball playfield world:** "High-angle inhabited world designed as an elaborate physical
+  pinball playfield. Use polished rails, ramps, lanes, bumpers, gates, targets and mechanical
+  understructures as coherent streets and architecture; apply controlled practical bulbs,
+  enamelled colour, chrome reflections, clear travel routes, and premium arcade craftsmanship."
+- **Rube Goldberg world:** "Isometric inhabited world organised as one legible Rube Goldberg
+  mechanism. Connect districts through balls, tracks, levers, pulleys, tipping vessels, belts
+  and counterweights with visible cause-and-effect logic, safe human work areas, coherent
+  scale, handmade material variety, and clear uncluttered action paths."
+- **Impossible-geometry world:** "Axonometric architectural dream built from deliberate,
+  internally coherent impossible geometry. Use gravity-defying stairs, recursive courtyards,
+  contradictory bridges and folded spatial connections while maintaining one stable camera,
+  clean junctions, readable local surfaces, purposeful pedestrian routes, and calm natural light."
+- **Expressionist stage-set city:** "High-angle city built as a practical expressionist theatre
+  set. Use violently skewed façades, forced perspective, jagged painted shadows, angular scenic
+  flats, visibly constructed stage depth, restrained black and desaturated colour with brand
+  accents, theatrical side light, and clear silhouettes rather than realistic geometry."
+- **Psychedelic biomorphic dreamscape:** "High-angle inhabited dreamscape shaped from flowing
+  biomorphic architecture. Use saturated but controlled colour fields, smooth organic tunnels,
+  liquid gradients, cellular pattern rhythms, elastic spatial transitions, crisp focal
+  silhouettes, and one coherent gravity field; keep the result sophisticated, navigable and temporally stable."
+- **Brutalist monumental world:** "High-angle monumental world formed from colossal board-marked
+  concrete masses. Use deep geometric voids, cantilevers, terraces, broad civic stairs, sparse
+  weathered metal and glass, severe directional sunlight, long architectural shadows, restrained
+  planting, and small active people that communicate scale without becoming a crowd."
 
 Photoreal branches use connected/full-bleed topology and real openings such as streets,
 doors, or glazing for camera travel. Keep the approved art direction through the identical
@@ -183,6 +267,9 @@ the approved medium without relying on its subject matter.
 [STYLE PREAMBLE]
 Subject: [SECTION.subject — describe the scene: the building/space, a few
 characters doing the work, the props that signal this stage of the business].
+Unless the scene is intentionally unoccupied, include a sparse handful of fully formed,
+clearly readable people (typically 2–6), naturally distributed through pedestrian or work
+areas and each caught mid-action. Keep them clear of vehicle paths and the camera route.
 ```
 
 Tips:
@@ -206,6 +293,18 @@ Only approved stills may condition video. After every scene still is individuall
 present an approved-files-only contact sheet and wait for separate cohesion approval before
 generating video.
 
+## Lived-in motion clause
+
+Append this byte-identical `[LIVED-IN MOTION CLAUSE]` to every video prompt whose frame
+contains people:
+
+```
+Every visible person continues a coherent ordinary action at a natural pace—walking along
+a safe pedestrian route, working at a table or counter, talking, browsing, tending the scene,
+or another activity established by frame zero. Each person keeps complete plausible anatomy,
+never freezes into a statue, spawns, vanishes, collides, crosses a vehicle path, or changes identity.
+```
+
 ## Leg prompt — architecture A, continuous forward take (SKILL Phase 4)
 
 `--first-frame = previous leg's ACTUAL last frame` (leg 0: the first scene's still).
@@ -221,7 +320,8 @@ Single continuous cinematic camera move, no cuts. **Continue the same steady for
 glide.** [MID-LEG MOVE — optional, from the library below.] The camera moves into
 [SCENE i] toward [FOCAL POINT]. **In the final second, settle into a steady forward
 glide toward [the doorway / opening / direction of the next scene].**
-[STYLE VIDEO TAIL]. Smooth continuous motion, subtle parallax. No text, no captions.
+[STYLE VIDEO TAIL]. [LIVED-IN MOTION CLAUSE]. Smooth continuous motion, subtle parallax.
+No text, no captions.
 ```
 
 For `CAMERA = locked-iso`, omit the mid-leg move and include this clause in every leg:
@@ -266,7 +366,7 @@ whole [SECTION.subject] within its environment. The camera glides forward
 and descends toward it, sweeping in toward [FOCAL POINT — the counter/the cauldrons/the
 people], as if flying inside. As the camera pushes in, the roof and upper structure
 gently lift and open away to reveal the warm interior. [STYLE VIDEO TAIL]. Smooth continuous motion,
-subtle parallax. No text, no captions.
+subtle parallax. [LIVED-IN MOTION CLAUSE]. No text, no captions.
 ```
 
 For scenes with no building to open (a field, a plaza, a road), replace the roof clause
@@ -290,7 +390,7 @@ Single continuous cinematic camera move, no cuts. The camera smoothly pulls up a
 out of [SCENE i], rising into the sky, then glides forward across the connected
 world and arrives above [SCENE i+1], beginning to descend toward it. One connected
 world in the approved medium, seamless flowing aerial transition. [STYLE VIDEO TAIL]. Smooth
-continuous motion. No text, no captions.
+continuous motion. [LIVED-IN MOTION CLAUSE]. No text, no captions.
 ```
 
 For the last connector into a hero-product finale: "…glides forward and the world
