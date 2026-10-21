@@ -1,0 +1,6 @@
+# PR Agent review scope; intentionally no exclusions after a tracked-file audit.
+# Keep skill instructions, source, templates, tests and configuration reviewable.
+# Demo stills/videos remain in scope for visual review; their exact generation
+# inputs are not recorded, so size or format alone does not justify exclusion.
+# Use $pragent-ignore before adding rules; document the generator/source of truth
+# and validate matching, neighboring source paths and any required output checks.
